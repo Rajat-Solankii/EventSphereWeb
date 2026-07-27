@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Event {
+  id              Int       @id @default(autoincrement())
+  title           String
+  date_time       DateTime
+  venue           String
+  ticket_price    Float
+  total_capacity  Int
+  available_slots Int
+  image           String?
+  tiers           String?
+  customFormFields String?
+  smtp_config     String?
+  page_config     String?
+  tickets         Ticket[]
+}
+
+model Ticket {
+  id              String         @id @default(uuid())
+  event_id        Int
+  attendee_name   String
+  student_roll_no String
+  attendee_email  String?
+  attendee_phone  String?
+  tier_id         String?
+  tier_name       String?
+  custom_data     String?
+  status          String         @default("OUTSIDE")
+  created_at      DateTime       @default(now())
+  
+  event           Event          @relation(fields: [event_id], references: [id])
+  attendance_logs AttendanceLog[]
+}
+
+model AttendanceLog {
+  id                 Int      @id @default(autoincrement())
+  ticket_id          String
+  action_type        String   // "ENTRY", "DENIED", "TEMPORARY_EXIT_CHECK"
+  timestamp          DateTime @default(now())
+  roll_number        String?
+  captured_photo_url String?
+
+  ticket             Ticket   @relation(fields: [ticket_id], references: [id])
+}
