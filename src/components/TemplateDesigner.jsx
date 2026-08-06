@@ -8,6 +8,7 @@ import {
   Upload, Search, Star, Triangle, Hexagon, Heart, Zap, Diamond,
   ArrowRight, ChevronUp, ChevronDown as ChevDown, Lock
 } from 'lucide-react';
+import { STOCK_IMAGES } from '../data/stockImages';
 
 // ─── Color Palette Presets ───
 const COLOR_PALETTES = [
@@ -88,7 +89,11 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
 
   // Unsplash search state
   const [unsplashQuery, setUnsplashQuery] = useState('');
-  const [unsplashResults, setUnsplashResults] = useState([]);
+  const [unsplashResults, setUnsplashResults] = useState(() => {
+    return [...STOCK_IMAGES].sort(() => 0.5 - Math.random()).slice(0, 12).map(img => ({
+      id: img.id, url: img.url, thumb: img.url
+    }));
+  });
   const [unsplashLoading, setUnsplashLoading] = useState(false);
 
   const canvasRef = useRef(null);
@@ -96,26 +101,68 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
 
   const markCustom = () => {};
 
-  // ─── Unsplash Search ───
-  const searchUnsplash = useCallback(async () => {
-    if (!unsplashQuery.trim()) return;
+  // ─── Photo Search ───
+  const searchUnsplash = useCallback(async (overrideQuery = null) => {
     setUnsplashLoading(true);
     try {
-      // Use Unsplash Source for free, no API key needed
-      // We'll generate predictable URLs based on search query
-      const results = [];
-      const baseQueries = [unsplashQuery.trim()];
-      // Generate 12 different image variations using the search term
-      for (let i = 0; i < 12; i++) {
-        results.push({
-          id: `unsplash-${i}-${Date.now()}`,
-          url: `https://source.unsplash.com/800x600/?${encodeURIComponent(unsplashQuery.trim())}&sig=${i}`,
-          thumb: `https://source.unsplash.com/400x300/?${encodeURIComponent(unsplashQuery.trim())}&sig=${i}`,
-        });
+      const query = (overrideQuery !== null ? overrideQuery : unsplashQuery).trim().toLowerCase();
+      let results = [];
+      
+      if (!query) {
+        // Shuffle and take top 12 if no query
+        results = [...STOCK_IMAGES].sort(() => 0.5 - Math.random()).slice(0, 12).map(img => ({
+          id: img.id, url: img.url, thumb: img.url
+        }));
+      } else {
+        // First try local curated images
+        const localMatches = STOCK_IMAGES.filter(img => 
+          img.category.toLowerCase().includes(query) || 
+          query.includes(img.category.toLowerCase())
+        ).map(img => ({
+          id: img.id, url: img.url, thumb: img.url
+        }));
+        
+        results = [...localMatches];
+
+        // If we don't have enough local images, fetch from Wikimedia Commons
+        if (results.length < 12) {
+          try {
+            const limit = 12 - results.length;
+            const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:bitmap|drawing%20${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*`;
+            
+            const res = await fetch(searchUrl);
+            const data = await res.json();
+            
+            if (data?.query?.pages) {
+              const wikiImages = Object.values(data.query.pages)
+                .filter(page => page.imageinfo && page.imageinfo.length > 0)
+                .map(page => {
+                  const info = page.imageinfo[0];
+                  return {
+                    id: `wiki-${page.pageid}`,
+                    url: info.url,
+                    thumb: info.thumburl || info.url
+                  };
+                });
+              
+              results = [...results, ...wikiImages];
+            }
+          } catch (wikiErr) {
+            console.error('Wikimedia fetch failed:', wikiErr);
+          }
+        }
+        
+        // If still nothing, fallback to random
+        if (results.length === 0) {
+          results = [...STOCK_IMAGES].sort(() => 0.5 - Math.random()).slice(0, 12).map(img => ({
+            id: img.id, url: img.url, thumb: img.url
+          }));
+        }
       }
+      
       setUnsplashResults(results);
     } catch (e) {
-      console.error('Unsplash search failed:', e);
+      console.error('Photo search failed:', e);
     } finally {
       setUnsplashLoading(false);
     }
@@ -432,7 +479,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                   value={unsplashQuery}
                   onChange={e => setUnsplashQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchUnsplash()}
-                  placeholder="Search Unsplash..."
+                  placeholder="Search photos..."
                   className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
                 />
                 <button 
@@ -448,7 +495,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                 {['Concert', 'Abstract', 'Technology', 'Nature', 'Neon', 'City'].map(tag => (
                   <button 
                     key={tag}
-                    onClick={() => { setUnsplashQuery(tag); }}
+                    onClick={() => { setUnsplashQuery(tag); searchUnsplash(tag); }}
                     className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-slate-800 border border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
                   >
                     {tag}
@@ -466,7 +513,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                         onClick={() => { setBgImage(img.url); setCanvasBg('transparent'); setBgGradient(''); }}
                         className="w-full h-24 rounded-lg overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-all relative group"
                       >
-                        <img src={img.thumb} alt="Unsplash" className="w-full h-full object-cover" loading="lazy" />
+                        <img src={img.thumb} alt="Photo" className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                           <span className="text-[10px] font-bold text-white">Set as BG</span>
                         </div>

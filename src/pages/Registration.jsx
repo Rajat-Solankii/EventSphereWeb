@@ -205,17 +205,16 @@ export default function Registration() {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/v1/events');
+        const res = await fetch(`http://localhost:3000/api/v1/events/public/${eventId}`);
         if (res.ok) {
-          const data = await res.json();
-          const mapped = data.map(e => ({
+          const e = await res.json();
+          const mapped = {
             ...e,
             capacity: e.total_capacity,
             available: e.available_slots,
             date: new Date(e.date_time).toISOString().split('T')[0]
-          }));
-          const ev = mapped.find(e => e.id.toString() === eventId);
-          setTargetEvent(ev);
+          };
+          setTargetEvent(mapped);
         }
       } catch (e) {
         console.error(e);
@@ -227,20 +226,25 @@ export default function Registration() {
   }, [eventId]);
 
   const [selectedTier, setSelectedTier] = useState(null);
-  const [bookingState, setBookingState] = useState('idle'); // idle, loading, success
+  const [bookingState, setBookingState] = useState('idle'); // idle, otp_verification, payment, loading, success
   const [attendeeName, setAttendeeName] = useState('');
   const [attendeeEmail, setAttendeeEmail] = useState('');
   const [attendeePhone, setAttendeePhone] = useState('');
   const [customFormData, setCustomFormData] = useState({});
   const [generatedPassId, setGeneratedPassId] = useState('');
+  const [paymentScreenshot, setPaymentScreenshot] = useState('');
+  
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [isOtpSending, setIsOtpSending] = useState(false);
+  const [otpError, setOtpError] = useState('');
 
-  const hasCustomName = targetEvent?.customFormFields?.some(f => f.label.toLowerCase().includes('name')) || false;
-  const hasCustomEmail = targetEvent?.customFormFields?.some(f => f.label.toLowerCase().includes('email')) || false;
-  const hasCustomPhone = targetEvent?.customFormFields?.some(f => f.label.toLowerCase().includes('phone')) || false;
+  const customNameField = targetEvent?.customFormFields?.find(f => f.label.toLowerCase().includes('name'));
+  const customEmailField = targetEvent?.customFormFields?.find(f => f.label.toLowerCase().includes('email'));
+  const customPhoneField = targetEvent?.customFormFields?.find(f => f.label.toLowerCase().includes('phone'));
 
-  const finalName = hasCustomName ? Object.values(customFormData)[0] : attendeeName;
-  const finalEmail = hasCustomEmail ? Object.values(customFormData)[1] : attendeeEmail;
-  const finalPhone = hasCustomPhone ? Object.values(customFormData)[2] : attendeePhone;
+  const finalName = customNameField ? customFormData[customNameField.id] : attendeeName;
+  const finalEmail = customEmailField ? customFormData[customEmailField.id] : attendeeEmail;
+  const finalPhone = customPhoneField ? customFormData[customPhoneField.id] : attendeePhone;
   const closeSheet = () => {
     setSelectedTier(null);
     setBookingState('idle');
@@ -249,11 +253,11 @@ export default function Registration() {
     setAttendeePhone('');
     setCustomFormData({});
     setGeneratedPassId('');
+    setEnteredOtp('');
+    setOtpError('');
   };
 
-  const handleBookTicket = () => {
-    if (!finalName || !finalEmail) return;
-    
+  const executeBooking = () => {
     setBookingState('loading');
     setTimeout(() => {
       const passId = `EVT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -284,16 +288,77 @@ export default function Registration() {
       fetch('http://localhost:3000/api/v1/tickets/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ attendee: newAttendee })
+        body: JSON.stringify({ attendee: { ...newAttendee, paymentScreenshot } })
       }).catch(err => console.log('SMTP backend not reachable', err));
-
       
       setGeneratedPassId(passId);
       setBookingState('success');
     }, 1500);
   };
 
-  const pageConfig = targetEvent?.page_config || { primaryColor: '#10b981', bgColor: '#020617', bgImage: '', showSocials: true };
+  const handleBookTicket = async () => {
+    if (!finalName || !finalEmail) {
+      alert("Please provide both your Name and Email.");
+      return;
+    }
+
+    setIsOtpSending(true);
+    setOtpError('');
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/events/${eventId}/send-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: finalEmail })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setBookingState('otp_verification');
+      } else {
+        alert(data.error || 'Failed to send OTP.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error sending OTP. Please check backend connection.');
+    } finally {
+      setIsOtpSending(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!enteredOtp) {
+      setOtpError('Please enter the OTP.');
+      return;
+    }
+    
+    setOtpError('');
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/events/${eventId}/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: finalEmail, otp: enteredOtp })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const finalPrice = selectedTier ? Number(selectedTier.price) : 0;
+        const hasUpi = upiConfig && upiConfig.upiId;
+
+        if (finalPrice > 0 && hasUpi) {
+          setBookingState('payment');
+        } else {
+          executeBooking();
+        }
+      } else {
+        setOtpError(data.error || 'Invalid OTP.');
+      }
+    } catch (err) {
+      console.error(err);
+      setOtpError('Error verifying OTP.');
+    }
+  };
+
+  const pageConfig = targetEvent?.page_config ? (typeof targetEvent.page_config === 'string' ? JSON.parse(targetEvent.page_config) : targetEvent.page_config) : { primaryColor: '#10b981', bgColor: '#020617', bgImage: '', showSocials: true, currency: 'INR' };
+  const currencySymbol = pageConfig?.currency === 'USD' ? '$' : pageConfig?.currency === 'EUR' ? '€' : pageConfig?.currency === 'GBP' ? '£' : '₹';
+  const upiConfig = targetEvent?.upi_config ? (typeof targetEvent.upi_config === 'string' ? JSON.parse(targetEvent.upi_config) : targetEvent.upi_config) : null;
 
   return (
     <div className="min-h-screen text-slate-200 font-sans relative flex flex-col" style={{ backgroundColor: pageConfig.bgColor, color: '#ffffff' }}>
@@ -376,7 +441,7 @@ export default function Registration() {
 
             {/* Ticket Selection Right Column */}
             <div className="w-full md:w-1/2 p-8 flex flex-col justify-center min-h-[500px]">
-              {bookingState !== 'success' ? (
+              {bookingState === 'idle' || bookingState === 'loading' ? (
                 <>
                   {!selectedTier ? (
                     <div className="space-y-6 animate-in fade-in">
@@ -393,7 +458,7 @@ export default function Registration() {
                               <p className="text-sm text-slate-400 mt-1">{tier.available > 0 ? `${tier.available} passes remaining` : 'Sold Out'}</p>
                             </div>
                             <div className="text-right">
-                              <div className="font-black text-2xl text-white">{Number(tier.price) === 0 ? "Free" : `$${Number(tier.price).toFixed(2)}`}</div>
+                              <div className="font-black text-2xl text-white">{Number(tier.price) === 0 ? "Free" : `${currencySymbol}${Number(tier.price).toFixed(2)}`}</div>
                             </div>
                           </div>
                         ))}
@@ -412,23 +477,19 @@ export default function Registration() {
                         </div>
                         <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
                           <span className="text-slate-300">Price</span>
-                          <span className="font-bold text-white">{Number(selectedTier.price) === 0 ? "Free" : `$${Number(selectedTier.price).toFixed(2)}`}</span>
-                        </div>
-                        <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
-                          <span className="text-slate-300">Platform Fee</span>
-                          <span className="font-bold text-white">{Number(selectedTier.price) === 0 ? "Free" : "$2.50"}</span>
+                          <span className="font-bold text-white">{Number(selectedTier.price) === 0 ? "Free" : `${currencySymbol}${Number(selectedTier.price).toFixed(2)}`}</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 text-lg">
                           <span>Total</span>
-                          <span>{Number(selectedTier.price) === 0 ? "Free" : `$${(Number(selectedTier.price) + 2.50).toFixed(2)}`}</span>
+                          <span>{Number(selectedTier.price) === 0 ? "Free" : `${currencySymbol}${Number(selectedTier.price).toFixed(2)}`}</span>
                         </div>
                       </div>
 
                       <div className="space-y-3">
                         <label className="text-sm font-bold text-slate-300 uppercase tracking-wider">Attendee Details</label>
-                        {!hasCustomName && <input type="text" placeholder="Full Name" required value={attendeeName} onChange={e => setAttendeeName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
-                        {!hasCustomEmail && <input type="email" placeholder="Email Address" required value={attendeeEmail} onChange={e => setAttendeeEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
-                        {!hasCustomPhone && <input type="tel" placeholder="Phone Number (Optional)" value={attendeePhone} onChange={e => setAttendeePhone(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
+                        {!customNameField && <input type="text" placeholder="Full Name" required value={attendeeName} onChange={e => setAttendeeName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
+                        {!customEmailField && <input type="email" placeholder="Email Address" required value={attendeeEmail} onChange={e => setAttendeeEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
+                        {!customPhoneField && <input type="tel" placeholder="Phone Number (Optional)" value={attendeePhone} onChange={e => setAttendeePhone(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
                         
                         {(targetEvent.customFormFields || []).map(field => (
                           <input 
@@ -446,7 +507,7 @@ export default function Registration() {
                       <div className="pt-4">
                         <button 
                           onClick={handleBookTicket}
-                          disabled={bookingState === 'loading' || !finalName || !finalEmail}
+                          disabled={bookingState === 'loading'}
                           className="w-full py-4 rounded-xl theme-btn text-white font-bold text-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                         >
                           {bookingState === 'loading' ? (
@@ -459,6 +520,97 @@ export default function Registration() {
                     </div>
                   )}
                 </>
+              ) : bookingState === 'otp_verification' ? (
+                <div className="space-y-6 animate-in slide-in-from-right-8 duration-300">
+                  <div className="flex items-center space-x-4 mb-4">
+                    <button onClick={() => setBookingState('idle')} className="text-sm theme-text font-semibold hover:opacity-80 transition-opacity">← Back to Details</button>
+                  </div>
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-white mb-2">Email Verification</h3>
+                    <p className="text-slate-400">An OTP has been sent to <strong className="text-white">{finalEmail}</strong>.</p>
+                  </div>
+                  
+                  <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 mt-6">
+                    <label className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 block">Enter OTP</label>
+                    <input 
+                      type="text" 
+                      placeholder="6-digit OTP" 
+                      maxLength="6"
+                      value={enteredOtp} 
+                      onChange={e => setEnteredOtp(e.target.value)} 
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-center tracking-widest text-2xl font-mono focus:outline-none focus:ring-1 theme-focus transition-all" 
+                    />
+                    {otpError && <p className="text-red-500 text-sm mt-2">{otpError}</p>}
+                  </div>
+
+                  <button 
+                    onClick={handleVerifyOtp}
+                    disabled={!enteredOtp || enteredOtp.length < 6}
+                    className="w-full py-4 rounded-xl theme-btn text-white font-bold text-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-6"
+                  >
+                    <span>Verify & Continue</span>
+                  </button>
+                </div>
+              ) : bookingState === 'payment' ? (
+                  <div className="space-y-6 animate-in slide-in-from-right-8 duration-300">
+                    <div className="flex items-center space-x-4 mb-4">
+                      <button onClick={() => setBookingState('idle')} className="text-sm theme-text font-semibold hover:opacity-80 transition-opacity">← Back to Details</button>
+                    </div>
+                    <div className="text-center mb-6">
+                      <h3 className="text-2xl font-bold text-white mb-2">Complete Payment</h3>
+                      <p className="text-slate-400">Scan the QR code below or use the UPI ID to pay <strong className="text-white">{currencySymbol}{Number(selectedTier.price).toFixed(2)}</strong></p>
+                    </div>
+                    <div className="bg-white p-6 rounded-2xl flex flex-col items-center justify-center space-y-4 max-w-sm mx-auto shadow-2xl">
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${upiConfig.upiId}&pn=${upiConfig.upiName}&am=${Number(selectedTier.price).toFixed(2)}&cu=INR`)}`} alt="UPI QR" className="w-48 h-48 rounded-lg" />
+                      <div className="text-center w-full">
+                        <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">UPI ID</p>
+                        <p className="text-slate-900 font-black text-lg font-mono break-all bg-slate-100 p-2 rounded">{upiConfig.upiId}</p>
+                      </div>
+                      <div className="text-center w-full">
+                        <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Payee Name</p>
+                        <p className="text-slate-900 font-bold">{upiConfig.upiName || 'Event Organizer'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 mt-6">
+                      <h4 className="text-lg font-bold text-white mb-4">Upload Screenshot</h4>
+                      <p className="text-slate-400 text-sm mb-4">After completing the payment, upload a screenshot of the successful transaction to receive your pass.</p>
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <svg className="w-8 h-8 mb-4 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                            <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                          </svg>
+                          <p className="mb-2 text-sm text-slate-400"><span className="font-semibold text-white">Click to upload</span> or drag and drop</p>
+                        </div>
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => setPaymentScreenshot(event.target.result);
+                            reader.readAsDataURL(file);
+                          }
+                        }} />
+                      </label>
+                      {paymentScreenshot && (
+                        <div className="mt-4 relative">
+                          <img src={paymentScreenshot} alt="Payment Screenshot" className="max-h-40 rounded-lg mx-auto" />
+                          <button onClick={() => setPaymentScreenshot('')} className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-full"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button 
+                      onClick={executeBooking}
+                      disabled={!paymentScreenshot || bookingState === 'loading'}
+                      className="w-full py-4 rounded-xl bg-theme-primary text-theme-text font-bold text-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-6 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                    >
+                      {bookingState === 'loading' ? (
+                        <><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></>
+                      ) : (
+                        <><CheckCircle2 className="w-5 h-5" /><span>Submit & Get Pass</span></>
+                      )}
+                    </button>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center space-y-6 pt-8 animate-in fade-in zoom-in duration-500">
                     <div className="relative w-24 h-24">
@@ -468,8 +620,12 @@ export default function Registration() {
                       </div>
                     </div>
                     <div className="text-center space-y-2 mb-8">
-                      <h3 className="text-2xl font-bold text-white">You're All Set!</h3>
-                      <p className="text-slate-400 text-sm">A confirmation email has been sent to your inbox.</p>
+                      <h3 className="text-2xl font-bold text-white">{paymentScreenshot ? 'Payment Under Review!' : "You're All Set!"}</h3>
+                      <p className="text-slate-400 text-sm">
+                        {paymentScreenshot 
+                          ? 'Your payment screenshot has been uploaded. An admin will verify the transaction and send the pass to your email.' 
+                          : 'A confirmation email has been sent to your inbox.'}
+                      </p>
                     </div>
                     
                     <DynamicTicket template={selectedTier.template} previewTicket={selectedTier._previewTicket} tierName={selectedTier.name} attendeeId={generatedPassId} attendeeName={attendeeName} />

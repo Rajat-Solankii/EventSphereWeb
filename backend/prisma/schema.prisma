@@ -3,13 +3,89 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider  = "sqlite"
+  url       = env("DATABASE_URL")
 }
 
+// ===== ENUMS =====
+// Role enum removed for SQLite compatibility
+
+// ===== ORGANIZATION MODEL =====
+
+model Organization {
+  id         String   @id @default(uuid())
+  name       String
+  created_at DateTime @default(now())
+
+  users  User[]
+  events Event[]
+}
+
+// ===== AUTH MODELS =====
+
+model User {
+  id                      String        @id @default(uuid())
+  name                    String
+  email                   String        @unique
+  password                String        // bcrypt hash (12 rounds)
+  role                    String        @default("EVENT_MANAGER")
+  organization_id         String?
+  profile_image           String?
+  
+  organization            Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  is_active               Boolean       @default(true)
+  is_verified             Boolean       @default(false)
+  verification_token      String?       @unique
+  verification_expires_at DateTime?
+  password_reset_token    String?       @unique
+  password_reset_expires  DateTime?
+  created_at              DateTime      @default(now())
+  updated_at              DateTime      @updatedAt
+
+  sessions     Session[]
+  event_access EventAccess[]
+}
+
+model OtpVerification {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  otp        String
+  is_verified Boolean @default(false)
+  expires_at DateTime
+  created_at DateTime @default(now())
+}
+
+model Session {
+  id            String   @id @default(uuid())
+  user_id       String
+  refresh_token String   @unique
+  expires_at    DateTime
+  created_at    DateTime @default(now())
+  user_agent    String?
+  ip_address    String?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model EventAccess {
+  id       String @id @default(uuid())
+  user_id  String
+  event_id String
+
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, event_id])
+}
+
+// ===== EVENT MODELS =====
+
 model Event {
-  id              Int       @id @default(autoincrement())
+  id              String    @id @default(uuid())
+  organization_id String?
   title           String
+
+  organization    Organization? @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   date_time       DateTime
   venue           String
   ticket_price    Float
@@ -20,12 +96,15 @@ model Event {
   customFormFields String?
   smtp_config     String?
   page_config     String?
-  tickets         Ticket[]
+  upi_config      String?
+
+  tickets      Ticket[]
+  event_access EventAccess[]
 }
 
 model Ticket {
-  id              String         @id @default(uuid())
-  event_id        Int
+  id              String   @id @default(uuid())
+  event_id        String
   attendee_name   String
   student_roll_no String
   attendee_email  String?
@@ -33,9 +112,10 @@ model Ticket {
   tier_id         String?
   tier_name       String?
   custom_data     String?
-  status          String         @default("OUTSIDE")
-  created_at      DateTime       @default(now())
-  
+  payment_screenshot String?
+  status          String   @default("OUTSIDE")
+  created_at      DateTime @default(now())
+
   event           Event          @relation(fields: [event_id], references: [id])
   attendance_logs AttendanceLog[]
 }
@@ -48,5 +128,5 @@ model AttendanceLog {
   roll_number        String?
   captured_photo_url String?
 
-  ticket             Ticket   @relation(fields: [ticket_id], references: [id])
+  ticket Ticket @relation(fields: [ticket_id], references: [id])
 }

@@ -1,18 +1,84 @@
-# React + Vite
+# EventSphereWeb 🌐
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+EventSphereWeb is a comprehensive, modern platform for event management and ticket generation. The application features a stunning 3D-enhanced frontend, an AI-driven ticket generation system with QR codes, and a robust backend to handle registrations and data.
 
-Currently, two official plugins are available:
+## 🚀 Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Dynamic 3D Landing Pages:** Beautiful, immersive landing experiences built with React Three Fiber and Three.js.
+- **AI-Driven Ticket Generation:** Generate custom event tickets with dynamic styling and automated QR code positioning.
+- **Template Designer:** Powerful in-browser template editing using Polotno for creating custom event visuals.
+- **Admin Dashboard:** Centralized panel for managing events, tickets, and user registrations.
+- **Responsive UI:** Fully responsive design built with TailwindCSS and Framer Motion.
 
-## React Compiler
+## 🛠️ Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend
+- **Framework:** React 19 + Vite
+- **Styling:** TailwindCSS
+- **3D & Animations:** Three.js, React Three Fiber, React Three Drei, Framer Motion
+- **Editor:** Polotno (Canvas-based design editor)
+- **State Management:** MobX
 
-## Expanding the Oxlint configuration
+### Backend
+- **Runtime:** Node.js
+- **Framework:** Express.js
+- **ORM:** Prisma (SQLite database)
+- **Utilities:** Nodemailer, CORS, dotenv
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## 📦 Project Structure
 
-# EventSphereWeb
+```text
+EventSphereWeb/
+├── backend/            # Express server, Prisma schema, API routes
+├── public/             # Static assets (icons, favicons)
+├── src/                # React application source code
+│   ├── assets/         # Images and SVG assets
+│   ├── components/     # Reusable React components (3D elements, Editor)
+│   ├── data/           # Mock data and stock images
+│   └── pages/          # Application routes (Admin, Landing, Registration)
+└── README.md           # Project documentation
+```
+
+## 🚦 Getting Started
+
+### Prerequisites
+- Node.js (v18 or higher)
+- npm or yarn
+
+### Frontend Setup
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Rajat-Solankii/EventSphereWeb.git
+   cd EventSphereWeb
+   ```
+2. Install frontend dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the Vite development server:
+   ```bash
+   npm run dev
+   ```
+
+### Backend Setup
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+2. Install backend dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up the Prisma database:
+   ```bash
+   npx prisma db push
+   npx prisma generate
+   ```
+4. Start the backend development server:
+   ```bash
+   npm run dev
+   ```
+
+## 📝 License
+
+This project is licensed under the ISC License.

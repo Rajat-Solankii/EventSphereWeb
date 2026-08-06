@@ -6,6 +6,13 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        'theme-text': '#081317',
+        'theme-bg': '#f8fcfd',
+        'theme-primary': '#4fb2c0',
+        'theme-secondary': '#97a1da',
+        'theme-accent': '#7172cc',
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       }

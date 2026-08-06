@@ -3,17 +3,17 @@
 @tailwind utilities;
 @layer utilities {
   .glass-panel {
-    @apply bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 shadow-xl;
+    @apply bg-white/60 backdrop-blur-xl border border-[#4fb2c0]/20 shadow-xl shadow-[#97a1da]/20;
   }
   .glass-card {
-    @apply bg-slate-800/40 backdrop-blur-lg border border-slate-700/40 hover:bg-slate-800/60 transition-all duration-300;
+    @apply bg-white/40 backdrop-blur-lg border border-[#4fb2c0]/10 hover:bg-white/60 hover:border-[#4fb2c0]/30 transition-all duration-300;
   }
   .text-glow {
-    text-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+    text-shadow: 0 0 10px rgba(79, 178, 192, 0.5);
   }
 }
 body {
-  @apply bg-slate-950 text-slate-100 antialiased selection:bg-indigo-500/30;
+  @apply bg-theme-bg text-theme-text antialiased selection:bg-theme-accent/30;
   margin: 0;
 }
 /* Custom Scrollbar */
@@ -22,13 +22,13 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-slate-950;
+  @apply bg-[#f8fcfd];
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-800 rounded-full border border-slate-700;
+  @apply bg-[#97a1da]/40 rounded-full border border-[#97a1da]/20;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-700;
+  @apply bg-[#97a1da];
 }
 /* 
  * Nature / Rustic Wedding Vibe Additions

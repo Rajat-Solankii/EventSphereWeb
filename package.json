@@ -16,14 +16,17 @@
     "@react-three/fiber": "^9.6.1",
     "framer-motion": "^12.42.2",
     "html2canvas": "^1.4.1",
+    "jsqr": "^1.4.0",
     "lucide-react": "^1.25.0",
     "mobx": "^6.16.1",
     "mobx-react-lite": "^4.1.1",
     "polotno": "^4.4.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-rnd": "^10.5.3",
     "react-router-dom": "^7.18.1",
+    "recharts": "^3.10.1",
     "three": "^0.185.1"
   },
   "devDependencies": {
