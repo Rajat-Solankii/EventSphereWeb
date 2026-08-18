@@ -572,6 +572,8 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                         className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500"
                       >
                         <option value="Inter">Inter</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Playfair Display">Playfair Display</option>
                         <option value="Arial">Arial</option>
                         <option value="Georgia">Georgia</option>
                         <option value="Times New Roman">Times New Roman</option>

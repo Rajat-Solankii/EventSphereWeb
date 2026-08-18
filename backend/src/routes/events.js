@@ -3,6 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { verifyToken, requireRole, requireEventAccess } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
+const { Groq } = require('groq-sdk');
 
 function getSmtpTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -216,6 +217,125 @@ router.delete('/:id', verifyToken, requireEventAccess, async (req, res) => {
   } catch (err) {
     console.error('Delete event error:', err);
     res.status(500).json({ error: 'Failed to delete event.' });
+  }
+});
+
+// ===== AI CHAT HISTORY =====
+router.get('/ai-chat/history', verifyToken, async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
+    let history = [];
+    if (user && user.ai_chat_history) {
+      history = JSON.parse(user.ai_chat_history);
+    }
+    res.status(200).json({ success: true, history });
+  } catch (err) {
+    console.error('Fetch AI chat history error:', err);
+    res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+// ===== AI CHAT EVENT GENERATION =====
+router.post('/ai-chat', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (req, res) => {
+  try {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
+      return res.status(400).json({ error: 'Groq API Key is missing. Please add GROQ_API_KEY to your backend .env file.' });
+    }
+
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ error: 'Messages array is required.' });
+    }
+
+    const groq = new Groq({ apiKey });
+
+    const systemPrompt = {
+      role: 'system',
+      content: `You are an AI assistant for EventSphere helping an event organizer create a new event.
+Your goal is to gather all necessary details to create the event: Title, Date & Time, Venue, Total Capacity, Currency (INR, USD, EUR, GBP), and Ticket Tiers (Name, Price, Capacity).
+Ask the user questions one at a time if information is missing. Keep your responses concise, friendly, and focused.
+
+IMPORTANT FORMATTING RULES FOR JSON OUTPUT:
+- ALWAYS properly format and Title Case the event "title" and "venue" (e.g., if user says "main audi in christ university", you write "Main Audi, Christ University").
+- ALWAYS format the "date" as a valid ISO-8601 string (e.g., "YYYY-MM-DDTHH:mm").
+
+STRICT RULE: If the user asks a question or makes a statement completely unrelated to event creation (e.g., general knowledge, coding, math, history), you MUST decline very warmly and politely. For example: "I'd love to chat about that, but my expertise is strictly limited to helping you craft amazing events! 😊 Let's get back to your event setup..." Do NOT answer the irrelevant question under any circumstances.
+
+Once you have ALL the necessary information, you MUST output ONLY a JSON object representing the event data and NOTHING ELSE. Do not use markdown blocks for the JSON.
+The JSON MUST match this structure exactly:
+{
+  "event_ready": true,
+  "event_data": {
+    "title": "...",
+    "date": "YYYY-MM-DDTHH:mm",
+    "venue": "...",
+    "capacity": 100,
+    "currency": "INR",
+    "theme_category": "One of: Party, Tech, Music, Arts, Wellness, Abstract, Sports",
+    "theme_color": "#HexCode that matches the vibe",
+    "tagline": "A short catchy 3-5 word tagline",
+    "tiers": [
+      { "name": "General Admission", "price": 0, "capacity": 100 }
+    ]
+  }
+}`
+    };
+
+    const groqMessages = [systemPrompt, ...messages];
+
+    const chatCompletion = await groq.chat.completions.create({
+      messages: groqMessages,
+      model: 'qwen/qwen3.6-27b',
+      temperature: 0.5,
+    });
+    let reply = chatCompletion.choices[0]?.message?.content || '';
+    
+    // Strip <think> blocks from reasoning models
+    reply = reply.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
+    
+    // Check if reply is the final JSON
+    let parsedJson = null;
+    try {
+      if (reply.includes('"event_ready":')) {
+        const jsonMatch = reply.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsedJson = JSON.parse(jsonMatch[0]);
+        }
+      }
+    } catch (e) {
+      // Not valid json, ignore
+    }
+
+    if (parsedJson && parsedJson.event_ready) {
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { ai_chat_history: null }
+      });
+      return res.status(200).json({
+        success: true,
+        is_ready: true,
+        event_data: parsedJson.event_data
+      });
+    }
+
+    const newHistory = [...messages, { role: 'assistant', content: reply }];
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { ai_chat_history: JSON.stringify(newHistory) }
+    });
+
+    res.status(200).json({
+      success: true,
+      is_ready: false,
+      message: reply
+    });
+
+  } catch (err) {
+    console.error('AI chat error:', err);
+    res.status(500).json({ error: 'Failed to process AI chat. Make sure your API key is correct.' });
   }
 });
 

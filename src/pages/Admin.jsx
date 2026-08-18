@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle
+  Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle, Loader
 } from 'lucide-react';
 import TemplateDesigner from '../components/TemplateDesigner';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +9,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import UserManagement from '../components/admin/UserManagement';
 import jsQR from 'jsqr';
 import UserProfileSettings from '../components/admin/UserProfileSettings';
+
+import { STOCK_IMAGES } from '../data/stockImages';
 
 const MOCK_LOGS = [];
 
@@ -464,6 +466,275 @@ const formatEventDate = (dateString) => {
   }
 };
 
+function AIChatModal({ isOpen, onClose, onEventReady }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const chatEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const toast = useToast();
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (!isProcessing) {
+      inputRef.current?.focus();
+    }
+  }, [isProcessing]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingHistory(true);
+      fetch('http://localhost:3000/api/v1/events/ai-chat/history', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.history && data.history.length > 0) {
+          setMessages(data.history);
+        } else {
+          setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
+        }
+      })
+      .catch(err => console.error(err))
+      .finally(() => setIsLoadingHistory(false));
+    }
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || isProcessing) return;
+
+    const newMessages = [...messages, { role: 'user', content: input.trim() }];
+    setMessages(newMessages);
+    setInput('');
+    setIsProcessing(true);
+
+    try {
+      const res = await fetch('http://localhost:3000/api/v1/events/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('es_token')}`
+        },
+        body: JSON.stringify({ messages: newMessages })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to communicate with AI.');
+      }
+
+      if (data.is_ready) {
+        toast('AI has finished preparing your event details!', 'success');
+        onEventReady(data.event_data);
+        onClose();
+        setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
+      } else {
+        setMessages([...newMessages, { role: 'assistant', content: data.message }]);
+      }
+    } catch (err) {
+      toast(err.message, 'error');
+      setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error. Please make sure GROQ_API_KEY is configured in the backend.' }]);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white/95 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-theme-primary/20 animate-in zoom-in-95 duration-200 flex flex-col" style={{ height: '600px' }}>
+        <div className="px-6 py-4 border-b border-theme-primary/10 bg-theme-bg/5 flex items-center justify-between shrink-0">
+          <div>
+            <h3 className="text-lg font-bold text-theme-text flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-indigo-600" />
+              AI Event Creator
+            </h3>
+            <p className="text-xs text-theme-text/60 mt-1">Powered by Groq</p>
+          </div>
+          <button type="button" onClick={onClose} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-xl transition-all">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+          {isLoadingHistory ? (
+            <div className="flex justify-center items-center h-full text-slate-400">
+              <Loader className="w-6 h-6 animate-spin" />
+            </div>
+          ) : (
+            <>
+              {messages.map((m, i) => (
+                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                    m.role === 'user' 
+                      ? 'bg-indigo-600 text-white rounded-br-sm shadow-md' 
+                      : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm'
+                  }`}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {isProcessing && (
+                <div className="flex justify-start">
+                  <div className="bg-white border border-slate-200 text-slate-500 rounded-2xl rounded-bl-sm px-4 py-3 text-sm shadow-sm flex items-center gap-2">
+                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
+                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          <div ref={chatEndRef} />
+        </div>
+
+        <form onSubmit={handleSend} className="p-4 bg-white border-t border-theme-primary/10 flex gap-2 shrink-0">
+          <input
+            ref={inputRef}
+            autoFocus
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            placeholder="Describe your event..."
+            disabled={isProcessing}
+            className="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-theme-text text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-colors disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={isProcessing || !input.trim()}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-md disabled:opacity-50 flex items-center justify-center shrink-0"
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+
+function generateAITemplate(mode, eventData, tierName = '') {
+  const themeCategory = eventData.theme_category || 'Abstract';
+  const themeColor = eventData.theme_color || '#6366f1';
+  const tagline = eventData.tagline || 'Join us for an amazing event!';
+  
+  // Format the date nicely
+  let dateStr = eventData.date;
+  try {
+    const d = new Date(eventData.date);
+    if (!isNaN(d.getTime())) {
+      dateStr = d.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }).replace(/, (?=\d+:\d+)/, ' • ');
+    }
+  } catch(e) {}
+  const defaultSubtitle = [dateStr, eventData.venue].filter(Boolean).join('  |  ') || 'Date & Time  |  Venue';
+
+  const matchingImages = STOCK_IMAGES.filter(img => 
+    img.category.toLowerCase().includes(themeCategory.toLowerCase()) ||
+    themeCategory.toLowerCase().includes(img.category.toLowerCase())
+  );
+  
+  let bgImage = '';
+  if (matchingImages.length > 0) {
+    bgImage = matchingImages[Math.floor(Math.random() * matchingImages.length)].url;
+  } else {
+    const abstractImages = STOCK_IMAGES.filter(img => img.category === 'Abstract');
+    bgImage = abstractImages[Math.floor(Math.random() * abstractImages.length)]?.url || STOCK_IMAGES[0].url;
+  }
+
+  const baseTemplate = {
+    canvasBg: '#0f172a',
+    bgImage: bgImage,
+    bgGradient: '',
+    bgOverlayOpacity: 0.65,
+    elements: []
+  };
+
+  if (mode === 'cover') {
+    baseTemplate.elements.push(
+      {
+        id: 'title-1', type: 'text',
+        x: 0, y: 110, width: 800, height: 100,
+        content: eventData.title || 'Event Title',
+        color: '#ffffff', fontSize: 72, fontWeight: '900',
+        textAlign: 'center', bgColor: 'transparent',
+        fontFamily: 'Outfit', rotation: 0
+      },
+      {
+        id: 'divider-1', type: 'shape', shape: 'line',
+        x: 350, y: 220, width: 100, height: 4,
+        bgColor: themeColor, borderRadius: '0px', border: 'none', rotation: 0
+      },
+      {
+        id: 'tagline-1', type: 'text',
+        x: 0, y: 240, width: 800, height: 40,
+        content: tagline.toUpperCase(),
+        color: themeColor, fontSize: 20, fontWeight: '700',
+        textAlign: 'center', bgColor: 'transparent',
+        fontFamily: 'Inter', rotation: 0
+      },
+      {
+        id: 'subtitle-1', type: 'text',
+        x: 0, y: 310, width: 800, height: 40,
+        content: defaultSubtitle,
+        color: '#e2e8f0', fontSize: 18, fontWeight: '500',
+        textAlign: 'center', bgColor: 'transparent',
+        fontFamily: 'Inter', rotation: 0
+      }
+    );
+  } else if (mode === 'ticket') {
+    baseTemplate.elements.push(
+      {
+        id: 'bg-shape', type: 'shape', shape: 'rounded',
+        x: 40, y: 40, width: 720, height: 320,
+        bgColor: 'rgba(15, 23, 42, 0.75)', borderRadius: '24px', border: `2px solid ${themeColor}40`, rotation: 0
+      },
+      {
+        id: 'accent-shape', type: 'shape', shape: 'rect',
+        x: 40, y: 40, width: 20, height: 320,
+        bgColor: themeColor, borderRadius: '24px 0 0 24px', border: 'none', rotation: 0
+      },
+      {
+        id: 'tier-label', type: 'text',
+        x: 90, y: 70, width: 450, height: 40,
+        content: tierName.toUpperCase(),
+        color: themeColor, fontSize: 22, fontWeight: '900',
+        textAlign: 'left', bgColor: 'transparent',
+        fontFamily: 'Outfit', rotation: 0
+      },
+      {
+        id: 'title-1', type: 'text',
+        x: 90, y: 110, width: 450, height: 80,
+        content: eventData.title || 'Event Title',
+        color: '#ffffff', fontSize: 40, fontWeight: '700',
+        textAlign: 'left', bgColor: 'transparent',
+        fontFamily: 'Outfit', rotation: 0
+      },
+      {
+        id: 'subtitle-1', type: 'text',
+        x: 90, y: 220, width: 480, height: 60,
+        content: defaultSubtitle,
+        color: '#cbd5e1', fontSize: 16, fontWeight: '500',
+        textAlign: 'left', bgColor: 'transparent',
+        fontFamily: 'Inter', rotation: 0
+      },
+      {
+        id: 'qr-mandatory', type: 'qrcode', _locked: true,
+        x: 580, y: 130, width: 140, height: 140,
+        data: 'QR-CODE', bgColor: '#ffffff', rotation: 0
+      }
+    );
+  }
+
+  return JSON.stringify(baseTemplate);
+}
+
 function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, onEditEvent, onDeleteEvent, viewingEventId, setViewingEventId, eventActiveTab }) {
   const [lightboxImage, setLightboxImage] = useState(null);
   const { user } = useAuth();
@@ -478,6 +749,41 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     tiers: [{ id: Date.now() + Math.random().toString(36).substr(2, 5), name: 'General Admission', price: '', capacity: '', template: null, _previewTicket: null }],
     customFormFields: []
   });
+
+  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+
+  const handleAIEventReady = (eventData) => {
+    const processedTiers = (eventData.tiers || [{ name: 'General Admission', price: 0, capacity: 100 }]).map(t => ({
+      id: Date.now() + Math.random().toString(36).substr(2, 5),
+      name: t.name || 'General Admission',
+      price: t.price || 0,
+      capacity: t.capacity || 100,
+      template: generateAITemplate('ticket', eventData, t.name || 'General Admission'),
+      _previewTicket: null
+    }));
+
+    const aiCoverTemplate = generateAITemplate('cover', eventData);
+
+    // Get the bgImage from the generated template so we can show something in the list view immediately
+    let coverImageUrl = '';
+    try {
+      coverImageUrl = JSON.parse(aiCoverTemplate).bgImage;
+    } catch (e) {}
+
+    setFormData({
+      title: eventData.title || '',
+      date: eventData.date || '',
+      venue: eventData.venue || '',
+      image: coverImageUrl,
+      currency: eventData.currency || 'INR',
+      tiers: processedTiers,
+      capacity: eventData.capacity || 100,
+      customFormFields: [],
+      _aiCoverTemplate: aiCoverTemplate
+    });
+    setEditingEventId(null);
+    setIsCreating(true);
+  };
 
   const [smtpForm, setSmtpForm] = useState({ host: '', port: '', user: '', pass: '', fromEmail: '' });
   const [smtpTestState, setSmtpTestState] = useState('idle'); // idle | loading | success | error
@@ -1731,14 +2037,16 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             defaultTitle={formData.title + ' Cover'}
             defaultDate={formData.date}
             defaultVenue={formData.venue}
-            onSave={({ dataUrl }) => {
-              setFormData({ ...formData, image: dataUrl });
+            initialTemplate={formData._aiCoverTemplate}
+            onSave={({ dataUrl, templateData }) => {
+              setFormData({ ...formData, image: dataUrl, _aiCoverTemplate: templateData });
               setIsDesigningCover(false);
             }}
             onCancel={() => setIsDesigningCover(false)}
           />,
           document.body
         )}
+        <AIChatModal isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} onEventReady={handleAIEventReady} />
       </div>
     );
   }
@@ -1758,13 +2066,22 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           <p className="text-theme-text/60 text-sm mt-1">Manage your active events and launch new ones.</p>
         </div>
         {['ORG_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role) && (
-          <button
-            onClick={() => setIsCreating(true)}
-            className="flex items-center space-x-2 px-5 py-2.5 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Create Event</span>
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setIsAIChatOpen(true)}
+              className="flex items-center space-x-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 border border-indigo-400"
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span>Ask AI to Create</span>
+            </button>
+            <button
+              onClick={() => setIsCreating(true)}
+              className="flex items-center space-x-2 px-5 py-2.5 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Create Event</span>
+            </button>
+          </div>
         )}
       </div>
 
@@ -1794,6 +2111,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           );
         })}
       </div>
+      <AIChatModal isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} onEventReady={handleAIEventReady} />
     </div>
   );
 }
