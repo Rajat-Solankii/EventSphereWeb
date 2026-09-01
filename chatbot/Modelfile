@@ -1,0 +1,39 @@
+# Replace this filename with your actual exported .gguf file
+FROM ./eventsphere-chat-q4_k_m.gguf
+
+# Qwen2.5 uses ChatML template
+TEMPLATE """{{ if .Messages }}
+{{- range $i, $_ := .Messages }}
+{{- $last := eq (len (slice $.Messages $i)) 1 }}
+{{- if eq .Role "system" }}<|im_start|>system
+{{ .Content }}<|im_end|>
+{{- else if eq .Role "user" }}<|im_start|>user
+{{ .Content }}<|im_end|>{{ if $last }}<|im_start|>assistant
+{{ end }}
+{{- else if eq .Role "assistant" }}<|im_start|>assistant
+{{ .Content }}{{ if not $last }}<|im_end|>{{ end }}
+{{- end }}
+{{- end }}
+{{- else }}
+{{- if .System }}<|im_start|>system
+{{ .System }}<|im_end|>{{ end }}{{ if .Prompt }}<|im_start|>user
+{{ .Prompt }}<|im_end|>{{ end }}<|im_start|>assistant
+{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}"""
+
+PARAMETER stop "<|im_start|>"
+PARAMETER stop "<|im_end|>"
+PARAMETER stop "<|endoftext|>"
+
+PARAMETER temperature 0.4
+PARAMETER num_ctx 2048
+PARAMETER repeat_penalty 1.15
+PARAMETER top_p 0.9
+
+SYSTEM """You are EventSphere Assistant, a friendly and helpful AI chatbot for the EventSphere event management platform.
+
+RULES:
+1. You help visitors with event registration, tickets, payments, QR codes, and general platform navigation.
+2. Be concise, warm, and helpful. Use emojis sparingly.
+3. If asked about something unrelated to EventSphere, politely redirect to event-related topics.
+4. Never make up event-specific details (dates, prices, venues). Direct users to check the event page.
+5. Always be encouraging and positive about attending events."""

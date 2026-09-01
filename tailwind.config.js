@@ -7,14 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        'theme-text': '#081317',
-        'theme-bg': '#f8fcfd',
-        'theme-primary': '#4fb2c0',
-        'theme-secondary': '#97a1da',
-        'theme-accent': '#7172cc',
+        'theme-text': '#000000',
+        'theme-bg': '#FFFFFF',
+        'theme-primary': '#6F6F6F',
+        'theme-secondary': '#000000',
+        'theme-accent': '#6F6F6F',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
+        serif: ['"Instrument Serif"', 'serif'],
       }
     },
   },

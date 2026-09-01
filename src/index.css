@@ -3,13 +3,36 @@
 @tailwind utilities;
 @layer utilities {
   .glass-panel {
-    @apply bg-white/60 backdrop-blur-xl border border-[#4fb2c0]/20 shadow-xl shadow-[#97a1da]/20;
+    @apply bg-white/80 backdrop-blur-xl border border-gray-200/50 shadow-xl shadow-gray-200/20;
   }
   .glass-card {
-    @apply bg-white/40 backdrop-blur-lg border border-[#4fb2c0]/10 hover:bg-white/60 hover:border-[#4fb2c0]/30 transition-all duration-300;
+    @apply bg-white/60 backdrop-blur-lg border border-gray-200/50 hover:bg-white/80 hover:border-gray-300 transition-all duration-300;
   }
   .text-glow {
-    text-shadow: 0 0 10px rgba(79, 178, 192, 0.5);
+    text-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .animate-fade-rise {
+    animation: fade-rise 0.8s ease-out forwards;
+  }
+  .animate-fade-rise-delay {
+    animation: fade-rise 0.8s ease-out 0.2s forwards;
+    opacity: 0;
+  }
+  .animate-fade-rise-delay-2 {
+    animation: fade-rise 0.8s ease-out 0.4s forwards;
+    opacity: 0;
+  }
+}
+
+@keyframes fade-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 body {
@@ -22,13 +45,13 @@ body {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-[#f8fcfd];
+  @apply bg-[#FFFFFF];
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-[#97a1da]/40 rounded-full border border-[#97a1da]/20;
+  @apply bg-[#CCCCCC] rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-[#97a1da];
+  @apply bg-[#999999];
 }
 /* 
  * Nature / Rustic Wedding Vibe Additions

@@ -34,13 +34,13 @@ function ToastProvider({ children }) {
         <div className="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none" style={{ maxWidth: 420 }}>
           {toasts.map(toast => {
             const icons = {
-              success: <CheckCircle className="w-5 h-5 text-theme-primary shrink-0" />,
+              success: <CheckCircle className="w-5 h-5 text-black shrink-0" />,
               error: <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />,
               warning: <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />,
               info: <Info className="w-5 h-5 text-theme-secondary shrink-0" />,
             };
             const borders = {
-              success: 'border-theme-primary/30',
+              success: 'border-black/30',
               error: 'border-rose-500/30',
               warning: 'border-amber-500/30',
               info: 'border-theme-secondary/30',
@@ -48,7 +48,7 @@ function ToastProvider({ children }) {
             return (
               <div
                 key={toast.id}
-                className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-xl border ${borders[toast.type]} bg-white/95 backdrop-blur-xl shadow-2xl text-sm text-theme-text font-medium ${toast.exiting ? 'animate-toast-out' : 'animate-toast-in'
+                className={`pointer-events-auto flex items-center gap-3 px-5 py-4 rounded-none border ${borders[toast.type]} bg-white/95 backdrop-blur-xl shadow-2xl text-sm text-theme-text font-medium ${toast.exiting ? 'animate-toast-out' : 'animate-toast-in'
                   }`}
               >
                 {icons[toast.type]}
@@ -85,26 +85,26 @@ function ConfirmProvider({ children }) {
         <div className="fixed inset-0 z-[9998] flex items-center justify-center" onClick={() => handleClose(false)}>
           <div className="absolute inset-0 bg-theme-bg/60 backdrop-blur-sm" />
           <div
-            className="relative bg-white/95 border border-theme-primary/20 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-toast-in"
+            className="relative bg-white/95 border border-gray-200 rounded-none p-8 max-w-md w-full mx-4 shadow-2xl animate-toast-in"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)' }}>
+              <div className="w-10 h-10 rounded-none flex items-center justify-center" style={{ backgroundColor: 'rgba(244,63,94,0.15)', border: '1px solid rgba(244,63,94,0.3)' }}>
                 <AlertTriangle className="w-5 h-5 text-rose-400" />
               </div>
-              <h3 className="text-lg font-bold text-theme-text">{state.title}</h3>
+              <h3 className="text-lg font-serif font-normal text-theme-text">{state.title}</h3>
             </div>
             <p className="text-theme-text/60 text-sm mb-8 leading-relaxed">{state.message}</p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => handleClose(false)}
-                className="px-5 py-2.5 rounded-xl bg-theme-bg hover:bg-slate-700 text-theme-text/80 text-sm font-semibold border border-theme-primary/20 transition-colors"
+                className="px-5 py-2.5 rounded-none bg-theme-bg hover:bg-slate-700 text-theme-text/80 text-sm font-sans font-medium border border-gray-200 transition-colors"
               >Cancel</button>
               <button
                 onClick={() => handleClose(true)}
-                className={`px-5 py-2.5 rounded-xl text-theme-text text-sm font-semibold transition-colors shadow-lg ${state.confirmColor === 'rose'
+                className={`px-5 py-2.5 rounded-none text-theme-text text-sm font-sans font-medium transition-colors shadow-lg ${state.confirmColor === 'rose'
                     ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/20'
-                    : 'bg-theme-primary hover:bg-theme-primary shadow-theme-primary/20'
+                    : 'bg-black hover:bg-black shadow-black/5'
                   }`}
               >{state.confirmLabel}</button>
             </div>
@@ -246,8 +246,19 @@ function AttendeeRegisterView({ events, allAttendees }) {
     }
   }, [selectedEventId, activeEvent, allAttendees]);
 
-  if (!events || events.length === 0) return <div className="text-theme-text/60 p-8">No events found.</div>;
-
+  if (!events || events.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in duration-700">
+        <div className="w-24 h-24 mb-6 rounded-none bg-gray-50 flex items-center justify-center border border-gray-200">
+          <Users className="w-10 h-10 text-gray-400" />
+        </div>
+        <h2 className="text-4xl font-serif text-black mb-4">No Attendees Yet</h2>
+        <p className="text-gray-500 max-w-md font-sans leading-relaxed">
+          You haven't created any events yet. Once you launch an event, the registered attendees will populate here.
+        </p>
+      </div>
+    );
+  }
   const dynamicHeaders = activeEvent?.customFormFields || [];
 
   const toast = useToast();
@@ -276,11 +287,11 @@ function AttendeeRegisterView({ events, allAttendees }) {
     <div className="max-w-7xl mx-auto space-y-6 relative z-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-theme-text mb-2">Attendee Register</h2>
+          <h2 className="text-3xl font-serif font-normal text-theme-text mb-2">Attendee Register</h2>
           <p className="text-theme-text/60">View and manage registered attendees for your events.</p>
         </div>
 
-        <div className="glass-panel border border-theme-primary/10 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-xl p-1 flex bg-white/50 backdrop-blur-xl">
+        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
           <select
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
@@ -291,25 +302,25 @@ function AttendeeRegisterView({ events, allAttendees }) {
               <option key={e.id} value={e.id} className="bg-white">{e.title}</option>
             ))}
           </select>
-          <div className="px-3 flex items-center justify-center border-l border-theme-primary/10 pointer-events-none text-theme-text/60">
+          <div className="px-3 flex items-center justify-center border-l border-gray-100 pointer-events-none text-theme-text/60">
             <ChevronDown className="w-4 h-4" />
           </div>
         </div>
       </div>
 
-      <div className="glass-panel border border-theme-primary/20 rounded-2xl overflow-hidden shadow-2xl bg-white/40 backdrop-blur-xl">
+      <div className="glass-panel border border-gray-200 rounded-none overflow-hidden shadow-2xl bg-white/40 backdrop-blur-xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-theme-bg/40 border-b border-theme-primary/10">
-                <th className="py-4 px-6 text-xs font-bold text-theme-text/60 uppercase tracking-wider">Event</th>
-                <th className="py-4 px-6 text-xs font-bold text-theme-text/60 uppercase tracking-wider">Name & Email</th>
-                <th className="py-4 px-6 text-xs font-bold text-theme-text/60 uppercase tracking-wider">Ticket Tier</th>
-                <th className="py-4 px-6 text-xs font-bold text-theme-text/60 uppercase tracking-wider">Pass ID</th>
+              <tr className="bg-theme-bg/40 border-b border-gray-100">
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Event</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Name & Email</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Ticket Tier</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Pass ID</th>
                 {dynamicHeaders.map(h => (
-                  <th key={h.id} className="py-4 px-6 text-xs font-bold text-theme-text/60 uppercase tracking-wider">{h.label}</th>
+                  <th key={h.id} className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">{h.label}</th>
                 ))}
-                <th className="py-4 px-6 text-xs font-bold text-theme-text/60 uppercase tracking-wider text-right">Actions</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-theme-primary/10">
@@ -323,16 +334,16 @@ function AttendeeRegisterView({ events, allAttendees }) {
                 attendees.map((attendee, idx) => {
                   const evt = events.find(e => e.id === attendee.eventId);
                   return (
-                    <tr key={idx} className="hover:bg-theme-primary/5 transition-colors">
+                    <tr key={idx} className="hover:bg-black/5 transition-colors">
                       <td className="py-4 px-6">
-                        <div className="font-bold text-theme-primary">{evt?.title || 'Unknown Event'}</div>
+                        <div className="font-serif font-normal text-black">{evt?.title || 'Unknown Event'}</div>
                       </td>
                       <td className="py-4 px-6">
-                        <div className="font-bold text-theme-text">{attendee.name}</div>
-                        <div className="text-sm text-theme-text/50 font-mono">{attendee.email}</div>
+                        <div className="font-serif font-normal text-theme-text">{attendee.name}</div>
+                        <div className="text-sm text-gray-500 font-mono font-medium">{attendee.email}</div>
                       </td>
                       <td className="py-4 px-6">
-                        <span className="px-3 py-1 bg-theme-primary/20 text-theme-primary rounded-full text-xs font-bold border border-theme-primary/30">
+                        <span className="px-3 py-1 bg-black/20 text-black rounded-none text-xs font-serif font-normal border border-black/30">
                           {attendee.tierName || 'GA'}
                         </span>
                       </td>
@@ -345,7 +356,7 @@ function AttendeeRegisterView({ events, allAttendees }) {
                         </td>
                       ))}
                       <td className="py-4 px-6 text-right">
-                        <button onClick={() => handleDeleteTicket(attendee.passId)} className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-500/10">
+                        <button onClick={() => handleDeleteTicket(attendee.passId)} className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-sm hover:bg-red-500/10">
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </td>
@@ -365,7 +376,19 @@ function LiveDashboardView({ events, allAttendees }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || null);
   const activeEvent = events.find(e => e.id === selectedEventId) || events[0];
 
-  if (!activeEvent) return null;
+  if (!activeEvent || events.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in duration-700">
+        <div className="w-24 h-24 mb-6 rounded-none bg-gray-50 flex items-center justify-center border border-gray-200">
+          <Activity className="w-10 h-10 text-gray-400" />
+        </div>
+        <h2 className="text-4xl font-serif text-black mb-4">No Live Telemetry</h2>
+        <p className="text-gray-500 max-w-md font-sans leading-relaxed">
+          The dashboard is waiting for your first event. Create an event to start monitoring live metrics and attendance.
+        </p>
+      </div>
+    );
+  }
 
   const totalCapacity = activeEvent.tiers.reduce((sum, t) => sum + parseInt(t.capacity || 0), 0);
   const totalAvailable = activeEvent.tiers.reduce((sum, t) => sum + parseInt(t.available || 0), 0);
@@ -376,11 +399,11 @@ function LiveDashboardView({ events, allAttendees }) {
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-theme-text mb-2">Live Telemetry</h2>
+          <h2 className="text-3xl font-serif font-normal text-theme-text mb-2">Live Telemetry</h2>
           <p className="text-theme-text/60">Real-time attendance and capacity metrics.</p>
         </div>
 
-        <div className="glass-panel border border-theme-primary/10 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-xl p-1 flex bg-white/50 backdrop-blur-xl">
+        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
           <select
             value={selectedEventId}
             onChange={(e) => setSelectedEventId(Number(e.target.value))}
@@ -398,13 +421,13 @@ function LiveDashboardView({ events, allAttendees }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: "TOTAL CAPACITY", value: totalCapacity, color: "text-theme-primary" },
-          { label: "PASSES CLAIMED", value: totalBooked, color: "text-theme-primary" },
+          { label: "TOTAL CAPACITY", value: totalCapacity, color: "text-black" },
+          { label: "PASSES CLAIMED", value: totalBooked, color: "text-black" },
           { label: "REMAINING", value: totalAvailable, color: "text-theme-secondary" }
         ].map((kpi, i) => (
-          <div key={i} className="relative bg-white/40 backdrop-blur-xl border border-theme-primary/10 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-2xl p-6 overflow-hidden group">
+          <div key={i} className="relative bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-6 overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-br from-theme-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <h4 className="text-xs font-bold text-theme-text/50 tracking-widest uppercase mb-4">{kpi.label}</h4>
+            <h4 className="text-xs font-serif font-normal text-theme-text/50 tracking-widest uppercase mb-4">{kpi.label}</h4>
             <div className={`font-mono text-5xl font-light ${kpi.color}`}>
               {kpi.value.toString().padStart(4, '0')}
             </div>
@@ -412,15 +435,15 @@ function LiveDashboardView({ events, allAttendees }) {
         ))}
       </div>
 
-      <div className="bg-white/40 backdrop-blur-xl border border-theme-primary/10 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-2xl overflow-hidden mt-8">
-        <div className="px-6 py-4 border-b border-theme-primary/10 flex justify-between items-center bg-theme-bg/20">
-          <h3 className="font-bold text-theme-text tracking-wide">ACTIVE GUEST LOG</h3>
-          <span className="font-mono text-xs text-theme-primary bg-theme-primary/10 px-2 py-1 rounded border border-theme-primary/20 shadow-[0_0_10px_rgba(99,102,241,0.2)]">LIVE • {allAttendees.filter(a => String(a.eventId) === String(activeEvent.id)).length} REGISTRATIONS</span>
+      <div className="bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none overflow-hidden mt-8">
+        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-theme-bg/20">
+          <h3 className="font-serif font-normal text-theme-text tracking-wide">ACTIVE GUEST LOG</h3>
+          <span className="font-mono text-xs text-black bg-gray-100 px-2 py-1 rounded border border-gray-200 shadow-[0_0_10px_rgba(99,102,241,0.2)]">LIVE • {allAttendees.filter(a => String(a.eventId) === String(activeEvent.id)).length} REGISTRATIONS</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-theme-primary/10 text-xs font-bold text-theme-text/50 uppercase tracking-widest bg-theme-bg/40">
+              <tr className="border-b border-gray-100 text-xs font-serif font-normal text-theme-text/50 uppercase tracking-widest bg-theme-bg/40">
                 <th className="px-6 py-4 font-mono">ID</th>
                 <th className="px-6 py-4">Attendee</th>
                 <th className="px-6 py-4 font-mono">Time</th>
@@ -429,13 +452,13 @@ function LiveDashboardView({ events, allAttendees }) {
             </thead>
             <tbody className="divide-y divide-theme-primary/10">
               {allAttendees.filter(a => String(a.eventId) === String(activeEvent.id)).map(log => (
-                <tr key={log.passId} className="hover:bg-theme-primary/5 transition-colors group">
-                  <td className="px-6 py-4 font-mono text-theme-text/50 text-sm group-hover:text-theme-primary transition-colors">{log.passId}</td>
+                <tr key={log.passId} className="hover:bg-black/5 transition-colors group">
+                  <td className="px-6 py-4 font-mono text-theme-text/50 text-sm group-hover:text-black transition-colors">{log.passId}</td>
                   <td className="px-6 py-4 text-theme-text font-medium">{log.name}</td>
                   <td className="px-6 py-4 font-mono text-theme-text/60 text-sm">{log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '-'}</td>
                   <td className="px-6 py-4 text-right">
                     <span className={`font-mono text-xs px-2 py-1 rounded border shadow-sm ${log.status === 'INSIDE'
-                        ? 'bg-theme-primary/10 text-theme-primary border-theme-primary/20 shadow-theme-primary/10'
+                        ? 'bg-gray-100 text-black border-gray-200 shadow-theme-primary/10'
                         : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10'
                       }`}>
                       {log.status || 'OUTSIDE'}
@@ -548,16 +571,16 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white/95 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden border border-theme-primary/20 animate-in zoom-in-95 duration-200 flex flex-col" style={{ height: '600px' }}>
-        <div className="px-6 py-4 border-b border-theme-primary/10 bg-theme-bg/5 flex items-center justify-between shrink-0">
+      <div className="relative bg-white/95 rounded-none w-full max-w-lg shadow-2xl overflow-hidden border border-gray-200 animate-in zoom-in-95 duration-200 flex flex-col" style={{ height: '600px' }}>
+        <div className="px-6 py-4 border-b border-gray-100 bg-theme-bg/5 flex items-center justify-between shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-theme-text flex items-center gap-2">
-              <MessageSquare className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-lg font-serif font-normal text-theme-text flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-black" />
               AI Event Creator
             </h3>
             <p className="text-xs text-theme-text/60 mt-1">Powered by Groq</p>
           </div>
-          <button type="button" onClick={onClose} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-xl transition-all">
+          <button type="button" onClick={onClose} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -571,9 +594,9 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
             <>
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm ${
+                  <div className={`max-w-[80%] rounded-none px-4 py-3 text-sm ${
                     m.role === 'user' 
-                      ? 'bg-indigo-600 text-white rounded-br-sm shadow-md' 
+                      ? 'bg-black text-white rounded-br-sm shadow-md' 
                       : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm'
                   }`}>
                     {m.content}
@@ -582,10 +605,10 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
               ))}
               {isProcessing && (
                 <div className="flex justify-start">
-                  <div className="bg-white border border-slate-200 text-slate-500 rounded-2xl rounded-bl-sm px-4 py-3 text-sm shadow-sm flex items-center gap-2">
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></span>
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                    <span className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+                  <div className="bg-white border border-slate-200 text-slate-500 rounded-none rounded-bl-sm px-4 py-3 text-sm shadow-sm flex items-center gap-2">
+                    <span className="w-2 h-2 bg-gray-500 rounded-none animate-bounce"></span>
+                    <span className="w-2 h-2 bg-gray-500 rounded-none animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                    <span className="w-2 h-2 bg-gray-500 rounded-none animate-bounce" style={{ animationDelay: '0.4s' }}></span>
                   </div>
                 </div>
               )}
@@ -594,7 +617,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
           <div ref={chatEndRef} />
         </div>
 
-        <form onSubmit={handleSend} className="p-4 bg-white border-t border-theme-primary/10 flex gap-2 shrink-0">
+        <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100 flex gap-2 shrink-0">
           <input
             ref={inputRef}
             autoFocus
@@ -603,12 +626,12 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
             onChange={e => setInput(e.target.value)}
             placeholder="Describe your event..."
             disabled={isProcessing}
-            className="flex-1 bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-theme-text text-sm focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-colors disabled:opacity-50"
+            className="flex-1 bg-slate-100 border border-slate-200 rounded-none px-4 py-2.5 text-theme-text text-sm focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-colors disabled:opacity-50"
           />
           <button
             type="submit"
             disabled={isProcessing || !input.trim()}
-            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold transition-all shadow-md disabled:opacity-50 flex items-center justify-center shrink-0"
+            className="px-4 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none font-serif font-normal transition-all shadow-md disabled:opacity-50 flex items-center justify-center shrink-0"
           >
             Send
           </button>
@@ -1176,12 +1199,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300 relative">
 
-        <div className="glass-panel border border-theme-primary/20 rounded-2xl p-8 space-y-6 shadow-2xl">
+        <div className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-8 items-start">
-            <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full md:w-1/3 h-48 object-cover rounded-xl border border-theme-primary/20" />
+            <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full md:w-1/3 h-48 object-cover rounded-none border border-gray-200" />
             <div className="flex-1 space-y-4 relative">
               <div className="absolute top-0 right-0 flex space-x-2">
-                <button onClick={() => handleEdit(event)} className="px-3 py-1 bg-theme-primary hover:bg-theme-primary rounded border border-theme-primary text-xs font-bold text-theme-text shadow-lg transition-colors">Edit</button>
+                <button onClick={() => handleEdit(event)} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Edit</button>
                 <button onClick={() => {
                   if (!event.smtp_config) {
                     toast('Please setup the email configuration first before sharing the event link.', 'warning');
@@ -1197,29 +1220,29 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     document.body.removeChild(textarea);
                     toast('Registration link copied to clipboard!', 'success');
                   });
-                }} className="px-3 py-1 bg-theme-primary hover:bg-theme-primary rounded border border-theme-primary text-xs font-bold text-theme-text shadow-lg transition-colors">Share Link</button>
-                <button onClick={async () => { const yes = await confirm('Delete Event', `Are you sure you want to permanently delete "${event.title}"? All registrations and data will be lost.`); if (yes) { onDeleteEvent(event.id); setViewingEventId(null); } }} className="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 rounded border border-rose-400 text-xs font-bold text-theme-text shadow-lg transition-colors">Delete</button>
+                }} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Share Link</button>
+                <button onClick={async () => { const yes = await confirm('Delete Event', `Are you sure you want to permanently delete "${event.title}"? All registrations and data will be lost.`); if (yes) { onDeleteEvent(event.id); setViewingEventId(null); } }} className="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 rounded border border-rose-400 text-xs font-serif font-normal text-theme-text shadow-lg transition-colors">Delete</button>
               </div>
-              <h2 className="text-3xl font-bold text-theme-text pr-48">{event.title}</h2>
+              <h2 className="text-3xl font-serif font-normal text-theme-text pr-48">{event.title}</h2>
               <div className="flex items-center text-theme-text/80 space-x-6">
-                <div className="flex items-center space-x-2"><Calendar className="w-5 h-5 text-theme-primary" /> <span>{formatEventDate(event.date)}</span></div>
-                <div className="flex items-center space-x-2"><MapPin className="w-5 h-5 text-theme-primary" /> <span>{event.venue}</span></div>
+                <div className="flex items-center space-x-2"><Calendar className="w-5 h-5 text-black" /> <span>{formatEventDate(event.date)}</span></div>
+                <div className="flex items-center space-x-2"><MapPin className="w-5 h-5 text-black" /> <span>{event.venue}</span></div>
               </div>
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-theme-primary/20">
-                <div><div className="text-sm text-theme-text/60">Total Capacity</div><div className="text-xl font-bold text-theme-text">{stats.totalCap}</div></div>
-                <div><div className="text-sm text-theme-text/60">Tickets Available</div><div className="text-xl font-bold text-theme-text">{stats.totalAvail}</div></div>
-                <div><div className="text-sm text-theme-text/60">Registrations</div><div className="text-xl font-bold text-theme-primary">{eventAttendees.length}</div></div>
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                <div><div className="text-sm text-theme-text/60">Total Capacity</div><div className="text-xl font-serif font-normal text-theme-text">{stats.totalCap}</div></div>
+                <div><div className="text-sm text-theme-text/60">Tickets Available</div><div className="text-xl font-serif font-normal text-theme-text">{stats.totalAvail}</div></div>
+                <div><div className="text-sm text-theme-text/60">Registrations</div><div className="text-xl font-serif font-normal text-black">{eventAttendees.length}</div></div>
               </div>
             </div>
           </div>
         </div>
 
         {eventActiveTab === 'overview' && (
-          <div className="glass-panel border border-theme-primary/20 rounded-2xl p-8 space-y-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-theme-text mb-4">Event Overview</h3>
+          <div className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
+            <h3 className="text-xl font-serif font-normal text-theme-text mb-4">Event Overview</h3>
             
-            <div className="bg-white/50 border border-theme-primary/20 rounded-xl p-6 shadow-inner">
-              <h4 className="text-sm font-bold text-theme-text/70 uppercase tracking-widest mb-6">Registration Trend</h4>
+            <div className="bg-white/50 border border-gray-200 rounded-none p-6 shadow-inner">
+              <h4 className="text-sm font-serif font-normal text-theme-text/70 uppercase tracking-widest mb-6">Registration Trend</h4>
               {eventAttendees.length > 0 ? (
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1257,16 +1280,16 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
         {eventActiveTab === 'smtp' && (
           <div className="space-y-8">
-            <form onSubmit={handleSmtpSave} className="glass-panel border border-theme-primary/20 rounded-2xl p-8 space-y-6 shadow-2xl">
+            <form onSubmit={handleSmtpSave} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
               <div>
-                <h3 className="text-xl font-bold text-theme-text mb-2">SMTP Configuration</h3>
+                <h3 className="text-xl font-serif font-normal text-theme-text mb-2">SMTP Configuration</h3>
                 <p className="text-theme-text/60">Configure custom email settings to send tickets from your own domain instead of the default platform address.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setSmtpForm({ host: 'smtp.gmail.com', port: '587', user: 'rajatsolanki1210@gmail.com', pass: '', fromEmail: '"Tech Event 2026" <info@techevent.com>' })}
-                className="px-4 py-2 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 rounded-lg text-sm font-bold transition-all whitespace-nowrap border border-theme-primary/20"
+                className="px-4 py-2 bg-gray-100 text-black hover:bg-black/20 rounded-sm text-sm font-serif font-normal transition-all whitespace-nowrap border border-gray-200"
               >
                 ⚡ Autofill Default
               </button>
@@ -1274,33 +1297,33 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">SMTP Host</label>
-                <input type="text" required value={smtpForm.host} onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="smtp.gmail.com" />
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Host</label>
+                <input type="text" required value={smtpForm.host} onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="smtp.gmail.com" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">SMTP Port</label>
-                <input type="number" required value={smtpForm.port} onChange={(e) => setSmtpForm({ ...smtpForm, port: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="587" />
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Port</label>
+                <input type="number" required value={smtpForm.port} onChange={(e) => setSmtpForm({ ...smtpForm, port: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="587" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">SMTP Username</label>
-                <input type="text" required value={smtpForm.user} onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="info@myevent.com" />
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Username</label>
+                <input type="text" required value={smtpForm.user} onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="info@myevent.com" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">SMTP Password / App Password</label>
-                <input type="password" required value={smtpForm.pass} onChange={(e) => setSmtpForm({ ...smtpForm, pass: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="••••••••" />
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Password / App Password</label>
+                <input type="password" required value={smtpForm.pass} onChange={(e) => setSmtpForm({ ...smtpForm, pass: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="••••••••" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">From Address</label>
-                <input type="text" value={smtpForm.fromEmail} onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder='"Tech Event 2026" <info@techevent.com>' />
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">From Address</label>
+                <input type="text" value={smtpForm.fromEmail} onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder='"Tech Event 2026" <info@techevent.com>' />
                 <p className="text-xs text-theme-text/50 mt-2">Optional: Define exactly how the sender name should appear in the recipient's inbox.</p>
               </div>
             </div>
 
             {/* SMTP Test Section */}
-            <div className="mt-6 p-5 bg-white/60 border border-theme-primary/20 rounded-xl space-y-4">
+            <div className="mt-6 p-5 bg-white/60 border border-gray-200 rounded-none space-y-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <h4 className="text-sm font-bold text-theme-text/80 uppercase tracking-wider">Test SMTP Connection</h4>
+                <div className="w-2 h-2 rounded-none bg-amber-400 animate-pulse" />
+                <h4 className="text-sm font-serif font-normal text-theme-text/80 uppercase tracking-wider">Test SMTP Connection</h4>
               </div>
               <p className="text-xs text-theme-text/50">Verify your credentials by sending a real test email before saving. This will use the credentials entered above.</p>
               <div className="flex gap-3">
@@ -1309,28 +1332,28 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                   placeholder="Send test email to..."
                   value={smtpTestEmail}
                   onChange={e => setSmtpTestEmail(e.target.value)}
-                  className="flex-1 bg-theme-bg border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-theme-primary"
+                  className="flex-1 bg-theme-bg border border-gray-200 rounded-sm px-4 py-2 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-black"
                 />
                 <button
                   type="button"
                   onClick={handleSmtpTest}
                   disabled={smtpTestState === 'loading'}
-                  className="px-5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-lg text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {smtpTestState === 'loading' ? (
-                    <><span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin inline-block" /> Sending...</>
+                    <><span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-none animate-spin inline-block" /> Sending...</>
                   ) : '✉ Send Test'}
                 </button>
               </div>
               {smtpTestMessage && (
-                <p className={`text-xs font-medium rounded-lg px-4 py-3 border ${smtpTestState === 'success'
-                    ? 'bg-theme-primary/10 text-theme-primary border-theme-primary/20'
+                <p className={`text-xs font-medium rounded-sm px-4 py-3 border ${smtpTestState === 'success'
+                    ? 'bg-gray-100 text-black border-gray-200'
                     : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                   }`}>{smtpTestMessage}</p>
               )}
             </div>
-            <div className="pt-4 border-t border-theme-primary/20">
-              <button type="submit" className="px-6 py-2 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Save SMTP Config</button>
+            <div className="pt-4 border-t border-gray-200">
+              <button type="submit" className="px-6 py-2 bg-black hover:bg-gray-800 text-white rounded-sm font-serif font-normal transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Save SMTP Config</button>
             </div>
             </form>
           </div>
@@ -1339,23 +1362,23 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {eventActiveTab === 'payment' && (
           <div className="space-y-6">
 
-            <div className="glass-panel border border-theme-primary/20 rounded-2xl p-8 space-y-6 shadow-2xl animate-in fade-in">
+            <div className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl animate-in fade-in">
               <div>
-                <h3 className="text-xl font-bold text-theme-text mb-2">Payment / UPI Config</h3>
+                <h3 className="text-xl font-serif font-normal text-theme-text mb-2">Payment / UPI Config</h3>
                 <p className="text-theme-text/60">Configure UPI details to accept payments during registration. The QR code will be auto-generated for attendees.</p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold text-theme-text/80 mb-2">UPI ID</label>
-                  <input type="text" value={upiConfig.upiId} onChange={(e) => setUpiConfig({ ...upiConfig, upiId: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="e.g. example@oksbi" />
+                  <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">UPI ID</label>
+                  <input type="text" value={upiConfig.upiId} onChange={(e) => setUpiConfig({ ...upiConfig, upiId: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="e.g. example@oksbi" />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-theme-text/80 mb-2">Payee Name</label>
-                  <input type="text" value={upiConfig.upiName} onChange={(e) => setUpiConfig({ ...upiConfig, upiName: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="e.g. Example" />
+                  <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Payee Name</label>
+                  <input type="text" value={upiConfig.upiName} onChange={(e) => setUpiConfig({ ...upiConfig, upiName: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="e.g. Example" />
                 </div>
               </div>
-              <div className="pt-4 border-t border-theme-primary/20">
-                <label className="cursor-pointer px-4 py-2 bg-theme-secondary/10 text-theme-secondary hover:bg-theme-secondary/20 rounded-lg text-sm font-bold transition-all border border-theme-secondary/20 inline-flex items-center gap-2">
+              <div className="pt-4 border-t border-gray-200">
+                <label className="cursor-pointer px-4 py-2 bg-theme-secondary/10 text-theme-secondary hover:bg-theme-secondary/20 rounded-sm text-sm font-serif font-normal transition-all border border-theme-secondary/20 inline-flex items-center gap-2">
                   <ImageIcon size={16} /> Auto-fill from QR Code Image
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                     const file = e.target.files[0];
@@ -1387,8 +1410,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 </label>
                 <p className="text-xs text-theme-text/50 mt-2">Upload your GPay/PhonePe QR code screenshot to automatically extract the details.</p>
               </div>
-              <div className="pt-4 border-t border-theme-primary/20">
-                <button type="button" onClick={handleUpiSave} className="px-6 py-2 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-lg font-bold transition-all shadow-lg">Save Configs</button>
+              <div className="pt-4 border-t border-gray-200">
+                <button type="button" onClick={handleUpiSave} className="px-6 py-2 bg-black hover:bg-gray-800 text-white rounded-sm font-serif font-normal transition-all shadow-lg">Save Configs</button>
               </div>
             </div>
           </div>
@@ -1397,13 +1420,13 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {eventActiveTab === 'broadcast' && (
           <div className="space-y-6">
             {/* ── Broadcast Email Composer ── */}
-            <div className="glass-panel border border-theme-secondary/20 rounded-2xl p-6 shadow-2xl space-y-4 animate-in fade-in">
+            <div className="glass-panel border border-theme-secondary/20 rounded-none p-6 shadow-2xl space-y-4 animate-in fade-in">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-8 h-8 rounded-lg bg-theme-secondary/10 border border-theme-secondary/20 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-sm bg-theme-secondary/10 border border-theme-secondary/20 flex items-center justify-center">
                   <Bell className="w-4 h-4 text-theme-secondary" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-theme-text">Email All Attendees</h3>
+                  <h3 className="text-base font-serif font-normal text-theme-text">Email All Attendees</h3>
                   <p className="text-xs text-theme-text/50">Uses this event's SMTP config · personalised per attendee · {eventAttendees.length} recipient{eventAttendees.length !== 1 ? 's' : ''}</p>
                 </div>
               </div>
@@ -1416,12 +1439,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     value={broadcastSubject}
                     onChange={e => setBroadcastSubject(e.target.value)}
                     required
-                    className="w-full bg-white/60 border border-theme-primary/20 rounded-lg px-4 py-2.5 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-theme-secondary transition-colors"
+                    className="w-full bg-white/60 border border-gray-200 rounded-sm px-4 py-2.5 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-theme-secondary transition-colors"
                   />
                 </div>
                 <div>
                   <div className="flex justify-between mb-2">
-                    <label className="text-sm font-semibold text-theme-text/80">Message (HTML or Text)</label>
+                    <label className="text-sm font-sans font-medium text-theme-text/80">Message (HTML or Text)</label>
                     <div className="flex flex-col items-end gap-2">
                       <div className="flex items-center gap-2">
                         <label className="text-xs text-theme-text/50">Attachments:</label>
@@ -1432,13 +1455,13 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                             setBroadcastAttachments(prev => [...prev, ...Array.from(e.target.files)]);
                             e.target.value = '';
                           }} 
-                          className="text-xs w-48 text-theme-text/80 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-theme-primary/10 file:text-theme-primary hover:file:bg-theme-primary/20 transition-all cursor-pointer"
+                          className="text-xs w-48 text-theme-text/80 file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-xs file:font-sans font-medium file:bg-gray-100 file:text-black hover:file:bg-black/20 transition-all cursor-pointer"
                         />
                       </div>
                       {broadcastAttachments.length > 0 && (
                         <div className="flex flex-wrap justify-end gap-2 max-w-[300px]">
                           {broadcastAttachments.map((f, i) => (
-                            <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-theme-primary/10 text-theme-primary text-xs rounded-lg font-mono truncate max-w-[150px]">
+                            <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-black text-xs rounded-sm font-mono truncate max-w-[150px]">
                               <span className="truncate">{f.name}</span>
                               <button type="button" onClick={() => setBroadcastAttachments(prev => prev.filter((_, idx) => idx !== i))} className="hover:text-rose-500 transition-colors shrink-0"><X size={12} /></button>
                             </span>
@@ -1453,7 +1476,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     onChange={e => setBroadcastMessage(e.target.value)}
                     required
                     rows={8}
-                    className="w-full bg-white/60 font-mono text-sm border border-theme-primary/20 rounded-lg p-4 text-theme-text placeholder:text-slate-500 focus:outline-none focus:border-theme-secondary transition-colors resize-y"
+                    className="w-full bg-white/60 font-mono text-sm border border-gray-200 rounded-sm p-4 text-theme-text placeholder:text-slate-500 focus:outline-none focus:border-theme-secondary transition-colors resize-y"
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -1467,17 +1490,17 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     <button
                       type="button"
                       onClick={() => setShowBroadcastPreview(!showBroadcastPreview)}
-                      className="px-5 py-2 bg-theme-primary/10 hover:bg-theme-primary/20 text-theme-primary rounded-lg text-sm font-bold transition-all flex items-center gap-2"
+                      className="px-5 py-2 bg-gray-100 hover:bg-black/20 text-black rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2"
                     >
                       <Eye size={16} /> Preview
                     </button>
                     <button
                       type="submit"
                       disabled={broadcastState === 'loading' || eventAttendees.length === 0}
-                      className="px-5 py-2 bg-theme-secondary hover:bg-theme-secondary text-theme-text rounded-lg text-sm font-bold transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-theme-secondary/20"
+                      className="px-5 py-2 bg-theme-secondary hover:bg-theme-secondary text-theme-text rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
                     >
                       {broadcastState === 'loading' ? (
-                        <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Sending...</>
+                        <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-none animate-spin inline-block" /> Sending...</>
                       ) : (
                         <>📣 Send to All ({eventAttendees.length})</>
                       )}
@@ -1487,22 +1510,22 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               </form>
 
               {showBroadcastPreview && (
-                <div className="mt-4 p-4 border border-theme-primary/20 rounded-xl bg-slate-50 overflow-hidden shadow-inner">
-                  <p className="text-xs font-bold text-theme-text/50 uppercase mb-3">Live Preview:</p>
-                  <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm min-h-[150px]">
+                <div className="mt-4 p-4 border border-gray-200 rounded-none bg-slate-50 overflow-hidden shadow-inner">
+                  <p className="text-xs font-serif font-normal text-theme-text/50 uppercase mb-3">Live Preview:</p>
+                  <div className="bg-white border border-slate-200 rounded-sm p-6 shadow-sm min-h-[150px]">
                     <div dangerouslySetInnerHTML={{ __html: (broadcastMessage || '<em>Your message will appear here...</em>').replace(/\{\{name\}\}/g, 'Attendee Name') }} />
                   </div>
                 </div>
               )}
 
               {broadcastResult && (
-                <div className={`flex items-start gap-3 rounded-xl px-4 py-3 border text-sm ${broadcastResult.success
-                    ? 'bg-theme-primary/10 border-theme-primary/20 text-theme-primary'
+                <div className={`flex items-start gap-3 rounded-none px-4 py-3 border text-sm ${broadcastResult.success
+                    ? 'bg-gray-100 border-gray-200 text-black'
                     : 'bg-rose-500/10 border-rose-500/20 text-rose-300'
                   }`}>
                   <span>{broadcastResult.success ? '✅' : '❌'}</span>
                   <div>
-                    <div className="font-semibold">{broadcastResult.message}</div>
+                    <div className="font-sans font-medium">{broadcastResult.message}</div>
                     {broadcastResult.failed > 0 && broadcastResult.errors && (
                       <div className="mt-1 text-xs opacity-70">
                         Failed: {broadcastResult.errors.map(e => e.email).join(', ')}
@@ -1516,41 +1539,41 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         )}
 
         {eventActiveTab === 'design' && (
-          <form onSubmit={handlePageConfigSave} className="glass-panel border border-theme-primary/20 rounded-2xl p-8 space-y-6 shadow-2xl animate-in fade-in">
-            <h3 className="text-xl font-bold text-theme-text mb-4">Registration Page Design</h3>
+          <form onSubmit={handlePageConfigSave} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl animate-in fade-in">
+            <h3 className="text-xl font-serif font-normal text-theme-text mb-4">Registration Page Design</h3>
             <p className="text-theme-text/60 mb-6">Customize the look and feel of the public registration page for this event.</p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">Primary Accent Color</label>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Primary Accent Color</label>
                 <div className="flex items-center space-x-3">
-                  <input type="color" value={pageConfig.primaryColor} onChange={(e) => setPageConfig({ ...pageConfig, primaryColor: e.target.value })} className="h-10 w-10 rounded border border-theme-primary/20 bg-white cursor-pointer" />
-                  <input type="text" value={pageConfig.primaryColor} onChange={(e) => setPageConfig({ ...pageConfig, primaryColor: e.target.value })} className="flex-1 bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text font-mono uppercase" />
+                  <input type="color" value={pageConfig.primaryColor} onChange={(e) => setPageConfig({ ...pageConfig, primaryColor: e.target.value })} className="h-10 w-10 rounded border border-gray-200 bg-white cursor-pointer" />
+                  <input type="text" value={pageConfig.primaryColor} onChange={(e) => setPageConfig({ ...pageConfig, primaryColor: e.target.value })} className="flex-1 bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text font-mono uppercase" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">Background Color (Dark)</label>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Background Color (Dark)</label>
                 <div className="flex items-center space-x-3">
-                  <input type="color" value={pageConfig.bgColor} onChange={(e) => setPageConfig({ ...pageConfig, bgColor: e.target.value })} className="h-10 w-10 rounded border border-theme-primary/20 bg-white cursor-pointer" />
-                  <input type="text" value={pageConfig.bgColor} onChange={(e) => setPageConfig({ ...pageConfig, bgColor: e.target.value })} className="flex-1 bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text font-mono uppercase" />
+                  <input type="color" value={pageConfig.bgColor} onChange={(e) => setPageConfig({ ...pageConfig, bgColor: e.target.value })} className="h-10 w-10 rounded border border-gray-200 bg-white cursor-pointer" />
+                  <input type="text" value={pageConfig.bgColor} onChange={(e) => setPageConfig({ ...pageConfig, bgColor: e.target.value })} className="flex-1 bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text font-mono uppercase" />
                 </div>
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-theme-text/80 mb-2">Custom Background Image URL (Optional)</label>
-                <input type="text" value={pageConfig.bgImage || ''} onChange={(e) => setPageConfig({ ...pageConfig, bgImage: e.target.value })} className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text" placeholder="https://..." />
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Custom Background Image URL (Optional)</label>
+                <input type="text" value={pageConfig.bgImage || ''} onChange={(e) => setPageConfig({ ...pageConfig, bgImage: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="https://..." />
                 <p className="text-xs text-theme-text/50 mt-2">If provided, this image will be used as a blurred backdrop for the entire registration page.</p>
               </div>
 
               {/* Payment Configuration */}
-              <div className="md:col-span-2 pt-4 border-t border-theme-primary/10">
-                <h4 className="text-lg font-bold text-theme-text mb-4">Payment Configuration</h4>
+              <div className="md:col-span-2 pt-4 border-t border-gray-100">
+                <h4 className="text-lg font-serif font-normal text-theme-text mb-4">Payment Configuration</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-semibold text-theme-text/80 mb-2">Currency</label>
+                    <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Currency</label>
                     <select
                       value={pageConfig.currency || 'INR'}
                       onChange={(e) => setPageConfig({ ...pageConfig, currency: e.target.value })}
-                      className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text focus:outline-none focus:border-theme-primary"
+                      className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text focus:outline-none focus:border-black"
                     >
                       <option value="INR">INR (₹)</option>
                       <option value="USD">USD ($)</option>
@@ -1559,12 +1582,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-theme-text/80 mb-2">UPI ID for Payments (Optional)</label>
+                    <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">UPI ID for Payments (Optional)</label>
                     <input
                       type="text"
                       value={pageConfig.upiId || ''}
                       onChange={(e) => setPageConfig({ ...pageConfig, upiId: e.target.value })}
-                      className="w-full bg-white/50 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text"
+                      className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text"
                       placeholder="e.g. yourname@upi"
                     />
                     <p className="text-xs text-theme-text/50 mt-1">If provided, users will see a UPI QR code to pay for tickets.</p>
@@ -1574,22 +1597,22 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
               <div className="md:col-span-2 pt-4">
                 <label className="flex items-center space-x-3 cursor-pointer">
-                  <input type="checkbox" checked={pageConfig.showSocials} onChange={(e) => setPageConfig({ ...pageConfig, showSocials: e.target.checked })} className="rounded text-theme-primary focus:ring-theme-primary bg-white border-slate-600 w-5 h-5" />
-                  <span className="text-sm font-semibold text-theme-text/80">Show Social Sharing Buttons on Checkout</span>
+                  <input type="checkbox" checked={pageConfig.showSocials} onChange={(e) => setPageConfig({ ...pageConfig, showSocials: e.target.checked })} className="rounded text-black focus:ring-theme-primary bg-white border-slate-600 w-5 h-5" />
+                  <span className="text-sm font-sans font-medium text-theme-text/80">Show Social Sharing Buttons on Checkout</span>
                 </label>
               </div>
             </div>
 
-            <div className="mt-8 p-4 bg-white rounded-xl border border-theme-primary/20 relative overflow-hidden">
+            <div className="mt-8 p-4 bg-white rounded-none border border-gray-200 relative overflow-hidden">
               <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: pageConfig.bgImage ? `url("${pageConfig.bgImage}")` : 'none', backgroundColor: pageConfig.bgColor }} />
               <div className="relative z-10 p-6 flex flex-col items-center justify-center space-y-4">
-                <h4 className="text-theme-text font-bold">Live Preview</h4>
-                <button type="button" style={{ backgroundColor: pageConfig.primaryColor }} className="px-6 py-2 rounded-xl text-theme-text font-bold shadow-lg">Checkout Button</button>
+                <h4 className="text-theme-text font-serif font-normal">Live Preview</h4>
+                <button type="button" style={{ backgroundColor: pageConfig.primaryColor }} className="px-6 py-2 rounded-none text-theme-text font-serif font-normal shadow-lg">Checkout Button</button>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-theme-primary/20">
-              <button type="submit" className="px-6 py-2 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-lg font-bold transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Save Page Design</button>
+            <div className="pt-4 border-t border-gray-200">
+              <button type="submit" className="px-6 py-2 bg-black hover:bg-gray-800 text-white rounded-sm font-serif font-normal transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)]">Save Page Design</button>
             </div>
           </form>
         )}
@@ -1598,12 +1621,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           <div className="space-y-6">
 
             {/* ── Participant Table ── */}
-            <div className="glass-panel border border-theme-primary/20 rounded-2xl overflow-hidden shadow-2xl">
-              <div className="p-6 border-b border-theme-primary/20 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-theme-text">Participant List</h3>
+            <div className="glass-panel border border-gray-200 rounded-none overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="text-xl font-serif font-normal text-theme-text">Participant List</h3>
                 <button
                   onClick={() => handleExportCSV(event.title, eventAttendees)}
-                  className="px-4 py-2 bg-theme-primary/20 hover:bg-theme-primary/40 text-theme-primary rounded-lg text-sm font-semibold flex items-center space-x-2 border border-theme-primary/30 transition-colors"
+                  className="px-4 py-2 bg-black/20 hover:bg-black/40 text-black rounded-sm text-sm font-sans font-medium flex items-center space-x-2 border border-black/30 transition-colors"
                 >
                   <span>Export CSV</span>
                 </button>
@@ -1614,27 +1637,27 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                   <div className="p-12 text-center text-theme-text/60">No attendees have registered for this event yet.</div>
                 ) : (
                   <table className="w-full text-left text-sm text-theme-text/80">
-                    <thead className="text-xs text-theme-text/60 uppercase bg-theme-bg/50 border-b border-theme-primary/20">
+                    <thead className="text-xs text-theme-text/60 uppercase bg-theme-bg/50 border-b border-gray-200">
                       <tr>
-                        <th className="px-6 py-4 font-semibold">Pass ID</th>
-                        <th className="px-6 py-4 font-semibold">Name</th>
-                        <th className="px-6 py-4 font-semibold">Email</th>
-                        <th className="px-6 py-4 font-semibold">Tier</th>
+                        <th className="px-6 py-4 font-sans font-medium">Pass ID</th>
+                        <th className="px-6 py-4 font-sans font-medium">Name</th>
+                        <th className="px-6 py-4 font-sans font-medium">Email</th>
+                        <th className="px-6 py-4 font-sans font-medium">Tier</th>
                         {(event.customFormFields || []).map(f => (
-                          <th key={f.id} className="px-6 py-4 font-semibold">{f.label}</th>
+                          <th key={f.id} className="px-6 py-4 font-sans font-medium">{f.label}</th>
                         ))}
-                        <th className="px-6 py-4 font-semibold">Status</th>
-                        <th className="px-6 py-4 font-semibold text-right">Timestamp</th>
-                        <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                        <th className="px-6 py-4 font-sans font-medium">Status</th>
+                        <th className="px-6 py-4 font-sans font-medium text-right">Timestamp</th>
+                        <th className="px-6 py-4 font-sans font-medium text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {eventAttendees.map((a, i) => {
                         const rState = resendStates[a.passId] || 'idle';
                         return (
-                          <tr key={i} className="border-b border-theme-primary/20 hover:bg-theme-bg/20 transition-colors">
-                            <td className="px-6 py-4 font-mono text-theme-primary text-xs whitespace-nowrap">{a.passId}</td>
-                            <td className="px-6 py-4 font-bold text-theme-text whitespace-nowrap">{a.name}</td>
+                          <tr key={i} className="border-b border-gray-200 hover:bg-theme-bg/20 transition-colors">
+                            <td className="px-6 py-4 font-mono text-black text-xs whitespace-nowrap">{a.passId}</td>
+                            <td className="px-6 py-4 font-serif font-normal text-theme-text whitespace-nowrap">{a.name}</td>
                             <td className="px-6 py-4 text-theme-text/60 whitespace-nowrap">{a.email}</td>
                             <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 py-1 bg-slate-700 rounded text-xs font-medium text-white">{a.tierName}</span></td>
                             {(event.customFormFields || []).map(f => (
@@ -1642,15 +1665,15 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                             ))}
                             <td className="px-6 py-4">
                               {a.status === 'PENDING' ? (
-                                <span className="px-2 py-1 bg-amber-500/20 text-amber-500 rounded text-xs font-bold flex items-center w-max gap-1">
+                                <span className="px-2 py-1 bg-amber-500/20 text-amber-500 rounded text-xs font-serif font-normal flex items-center w-max gap-1">
                                   <AlertTriangle size={12} /> PENDING
                                 </span>
                               ) : a.status === 'DECLINED' ? (
-                                <span className="px-2 py-1 bg-rose-500/20 text-rose-500 rounded text-xs font-bold flex items-center w-max gap-1">
+                                <span className="px-2 py-1 bg-rose-500/20 text-rose-500 rounded text-xs font-serif font-normal flex items-center w-max gap-1">
                                   <XCircle size={12} /> DECLINED
                                 </span>
                               ) : (
-                                <span className="px-2 py-1 bg-emerald-500/20 text-emerald-500 rounded text-xs font-bold">
+                                <span className="px-2 py-1 bg-gray-500/20 text-gray-500 rounded text-xs font-serif font-normal">
                                   VALID
                                 </span>
                               )}
@@ -1661,18 +1684,18 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                                 {/* Payment Verification */}
                                 <div className="flex gap-1 mr-2">
                                   {a.payment_screenshot && (
-                                    <button onClick={() => setLightboxImage(a.payment_screenshot)} className="p-2 text-theme-secondary hover:bg-theme-secondary/10 rounded-lg text-xs font-bold transition-colors flex items-center gap-1" title="View Screenshot">
+                                    <button onClick={() => setLightboxImage(a.payment_screenshot)} className="p-2 text-theme-secondary hover:bg-theme-secondary/10 rounded-sm text-xs font-serif font-normal transition-colors flex items-center gap-1" title="View Screenshot">
                                       <ImageIcon size={16} />
                                     </button>
                                   )}
                                   {(a.status === 'PENDING' || a.status === 'DECLINED') && (
                                     <>
                                       {a.status === 'PENDING' && (
-                                        <button onClick={() => handleDeclinePayment(a.passId)} disabled={declineState[a.passId] === 'loading'} className="px-3 py-1 bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 rounded-lg text-xs font-bold transition-colors flex items-center gap-1">
+                                        <button onClick={() => handleDeclinePayment(a.passId)} disabled={declineState[a.passId] === 'loading'} className="px-3 py-1 bg-rose-500/20 text-rose-500 hover:bg-rose-500/30 rounded-sm text-xs font-serif font-normal transition-colors flex items-center gap-1">
                                           {declineState[a.passId] === 'loading' ? '...' : 'Decline'}
                                         </button>
                                       )}
-                                      <button onClick={() => handleVerifyPayment(a.passId)} disabled={verifyState[a.passId] === 'loading'} className="px-3 py-1 bg-theme-primary text-theme-text rounded-lg text-xs font-bold hover:bg-theme-primary/90 transition-colors flex items-center gap-1">
+                                      <button onClick={() => handleVerifyPayment(a.passId)} disabled={verifyState[a.passId] === 'loading'} className="px-3 py-1 bg-black text-white rounded-sm text-xs font-serif font-normal hover:bg-black/90 transition-colors flex items-center gap-1">
                                         {verifyState[a.passId] === 'loading' ? '...' : 'Verify'}
                                       </button>
                                     </>
@@ -1683,19 +1706,19 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                                   onClick={() => handleResendEmail(a.passId)}
                                   disabled={rState === 'loading'}
                                   title="Resend confirmation email"
-                                  className={`p-2 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1 ${rState === 'done' ? 'text-theme-primary bg-theme-primary/10'
+                                  className={`p-2 rounded-sm transition-colors text-xs font-sans font-medium flex items-center gap-1 ${rState === 'done' ? 'text-black bg-gray-100'
                                       : rState === 'error' ? 'text-rose-400 bg-rose-500/10'
                                         : 'text-theme-secondary hover:text-theme-secondary hover:bg-theme-secondary/10'
                                     } disabled:opacity-50`}
                                 >
                                   {rState === 'loading' ? (
-                                    <span className="w-3.5 h-3.5 border-2 border-theme-secondary border-t-transparent rounded-full animate-spin inline-block" />
+                                    <span className="w-3.5 h-3.5 border-2 border-theme-secondary border-t-transparent rounded-none animate-spin inline-block" />
                                   ) : rState === 'done' ? '✓' : rState === 'error' ? '✗' : '✉'}
                                 </button>
                                 {/* Message */}
                                 <button
                                   onClick={() => setCustomMailModal({ isOpen: true, attendee: a, subject: '', message: '', attachments: [], status: 'idle' })}
-                                  className="p-2 text-theme-text/50 hover:text-theme-primary hover:bg-theme-primary/10 rounded-lg transition-colors"
+                                  className="p-2 text-theme-text/50 hover:text-black hover:bg-gray-100 rounded-sm transition-colors"
                                   title="Send Private Message"
                                 >
                                   <MessageSquare size={16} />
@@ -1703,7 +1726,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                                 {/* Delete */}
                                 <button
                                   onClick={() => handleDeleteTicket(a.passId)}
-                                  className="p-2 text-theme-text/50 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                  className="p-2 text-theme-text/50 hover:text-red-400 hover:bg-red-400/10 rounded-sm transition-colors"
                                   title="Delete Ticket"
                                 >
                                   <Trash2 size={16} />
@@ -1725,34 +1748,34 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {customMailModal.isOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} />
-            <div className="relative bg-white/95 rounded-2xl w-full max-w-3xl shadow-2xl overflow-hidden border border-theme-primary/20 animate-in zoom-in-95 duration-200">
+            <div className="relative bg-white/95 rounded-none w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-200 animate-in zoom-in-95 duration-200">
               <form onSubmit={handleSendCustomMail}>
-                <div className="px-6 py-4 border-b border-theme-primary/10 bg-theme-bg/5 flex items-center justify-between">
+                <div className="px-6 py-4 border-b border-gray-100 bg-theme-bg/5 flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-theme-text flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-theme-primary" />
+                    <h3 className="text-lg font-serif font-normal text-theme-text flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-black" />
                       Message {customMailModal.attendee?.name}
                     </h3>
                     <p className="text-xs text-theme-text/60 mt-1">{customMailModal.attendee?.email}</p>
                   </div>
-                  <button type="button" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-xl transition-all">
+                  <button type="button" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                   <div>
-                    <label className="block text-sm font-semibold text-theme-text/80 mb-1">Subject</label>
+                    <label className="block text-sm font-sans font-medium text-theme-text/80 mb-1">Subject</label>
                     <input 
                       type="text" required
                       value={customMailModal.subject}
                       onChange={e => setCustomMailModal({...customMailModal, subject: e.target.value})}
-                      className="w-full bg-theme-bg/30 border border-theme-primary/20 rounded-lg px-4 py-2 text-theme-text"
+                      className="w-full bg-theme-bg/30 border border-gray-200 rounded-sm px-4 py-2 text-theme-text"
                       placeholder="e.g., Question about your ticket"
                     />
                   </div>
                   <div>
                     <div className="flex justify-between mb-1">
-                      <label className="block text-sm font-semibold text-theme-text/80">Message (HTML or Text)</label>
+                      <label className="block text-sm font-sans font-medium text-theme-text/80">Message (HTML or Text)</label>
                       <div className="flex flex-col items-end gap-2">
                         <div className="flex items-center gap-2">
                           <label className="text-xs text-theme-text/50">Attachments:</label>
@@ -1763,13 +1786,13 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                               setCustomMailModal({...customMailModal, attachments: [...(customMailModal.attachments || []), ...Array.from(e.target.files)]});
                               e.target.value = '';
                             }} 
-                            className="text-xs w-48 text-theme-text/80 file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-theme-primary/10 file:text-theme-primary hover:file:bg-theme-primary/20 transition-all cursor-pointer"
+                            className="text-xs w-48 text-theme-text/80 file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-xs file:font-sans font-medium file:bg-gray-100 file:text-black hover:file:bg-black/20 transition-all cursor-pointer"
                           />
                         </div>
                         {(customMailModal.attachments || []).length > 0 && (
                           <div className="flex flex-wrap justify-end gap-2 max-w-[300px]">
                             {(customMailModal.attachments || []).map((f, i) => (
-                              <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-theme-primary/10 text-theme-primary text-xs rounded-lg font-mono truncate max-w-[150px]">
+                              <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-black text-xs rounded-sm font-mono truncate max-w-[150px]">
                                 <span className="truncate">{f.name}</span>
                                 <button type="button" onClick={() => setCustomMailModal({...customMailModal, attachments: customMailModal.attachments.filter((_, idx) => idx !== i)})} className="hover:text-rose-500 transition-colors shrink-0"><X size={12} /></button>
                               </span>
@@ -1784,21 +1807,21 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                       onChange={e => setCustomMailModal({...customMailModal, message: e.target.value})}
                       required
                       rows={6}
-                      className="w-full bg-white/60 font-mono text-sm border border-theme-primary/20 rounded-lg p-4 text-theme-text placeholder:text-slate-500 focus:outline-none focus:border-theme-secondary transition-colors resize-y"
+                      className="w-full bg-white/60 font-mono text-sm border border-gray-200 rounded-sm p-4 text-theme-text placeholder:text-slate-500 focus:outline-none focus:border-theme-secondary transition-colors resize-y"
                     />
                   </div>
                   <div className="pt-2">
-                    <p className="text-xs font-bold text-theme-text/50 uppercase mb-3">Live Preview:</p>
-                    <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm min-h-[100px]">
+                    <p className="text-xs font-serif font-normal text-theme-text/50 uppercase mb-3">Live Preview:</p>
+                    <div className="bg-white border border-slate-200 rounded-sm p-4 shadow-sm min-h-[100px]">
                       <div dangerouslySetInnerHTML={{ __html: (customMailModal.message || '<em>Your message will appear here...</em>').replace(/\{\{name\}\}/g, customMailModal.attendee?.name || 'Attendee Name') }} />
                     </div>
                   </div>
                 </div>
-                <div className="p-6 bg-theme-bg/30 border-t border-theme-primary/10 flex justify-end gap-3">
-                  <button type="button" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} className="px-5 py-2 text-theme-text/60 hover:text-theme-text font-semibold transition-colors">Cancel</button>
-                  <button type="submit" disabled={customMailModal.status === 'loading'} className="px-6 py-2 bg-theme-primary text-white rounded-xl font-bold hover:bg-theme-primary/90 transition-all flex items-center gap-2 shadow-lg shadow-theme-primary/20 disabled:opacity-50">
+                <div className="p-6 bg-theme-bg/30 border-t border-gray-100 flex justify-end gap-3">
+                  <button type="button" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} className="px-5 py-2 text-theme-text/60 hover:text-theme-text font-sans font-medium transition-colors">Cancel</button>
+                  <button type="submit" disabled={customMailModal.status === 'loading'} className="px-6 py-2 bg-black text-white rounded-none font-serif font-normal hover:bg-black/90 transition-all flex items-center gap-2 shadow-lg shadow-black/5 disabled:opacity-50">
                     {customMailModal.status === 'loading' ? (
-                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Sending...</>
+                      <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-none animate-spin inline-block" /> Sending...</>
                     ) : 'Send Message'}
                   </button>
                 </div>
@@ -1815,7 +1838,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           >
             <div className="relative max-w-4xl max-h-[90vh] w-full h-full flex items-center justify-center animate-in zoom-in-95 duration-300">
               <button 
-                className="absolute top-4 right-4 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full transition-colors backdrop-blur-sm shadow-xl border border-white/10"
+                className="absolute top-4 right-4 bg-black/50 hover:bg-black/80 text-white p-2 rounded-none transition-colors backdrop-blur-sm shadow-xl border border-white/10"
                 onClick={(e) => { e.stopPropagation(); setLightboxImage(null); }}
               >
                 <X size={24} />
@@ -1823,7 +1846,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               <img 
                 src={lightboxImage} 
                 alt="Payment Screenshot" 
-                className="max-w-full max-h-full object-contain rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10"
+                className="max-w-full max-h-full object-contain rounded-none shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10"
                 onClick={(e) => e.stopPropagation()} // Prevent click inside image from closing modal
               />
             </div>
@@ -1838,50 +1861,50 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     return (
       <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300 relative">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-theme-text">{editingEventId ? 'Edit Event' : 'Create New Event'}</h2>
+          <h2 className="text-2xl font-serif font-normal text-theme-text">{editingEventId ? 'Edit Event' : 'Create New Event'}</h2>
           <button onClick={() => { setIsCreating(false); setEditingEventId(null); }} className="text-theme-text/60 hover:text-theme-text transition-colors">Cancel</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="glass-panel border border-theme-primary/20 rounded-2xl p-8 space-y-6 shadow-2xl">
+        <form onSubmit={handleSubmit} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="col-span-1 md:col-span-2 space-y-2">
-              <label className="text-sm font-semibold text-theme-text/80">Event Title</label>
+              <label className="text-sm font-sans font-medium text-theme-text/80">Event Title</label>
               <input
                 type="text" required
                 value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })}
                 placeholder="e.g., Global AI Conference 2026"
-                className="w-full bg-white/50 border border-theme-primary/20 rounded-xl px-4 py-3 text-theme-text placeholder:text-slate-600 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-indigo-500 transition-all"
+                className="w-full bg-white/50 border border-gray-200 rounded-none px-4 py-3 text-theme-text placeholder:text-slate-600 focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-theme-text/80">Date & Time</label>
+              <label className="text-sm font-sans font-medium text-theme-text/80">Date & Time</label>
               <input
                 type="datetime-local" required
                 value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })}
-                className="w-full bg-white/50 border border-theme-primary/20 rounded-xl px-4 py-3 text-theme-text focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-indigo-500 transition-all"
+                className="w-full bg-white/50 border border-gray-200 rounded-none px-4 py-3 text-theme-text focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-theme-text/80">Venue / Location</label>
+              <label className="text-sm font-sans font-medium text-theme-text/80">Venue / Location</label>
               <div className="relative">
                 <MapPin className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-theme-text/50" />
                 <input
                   type="text" required
                   value={formData.venue} onChange={e => setFormData({ ...formData, venue: e.target.value })}
                   placeholder="e.g., Grand Hyatt, NYC"
-                  className="w-full bg-white/50 border border-theme-primary/20 rounded-xl pl-12 pr-4 py-3 text-theme-text placeholder:text-slate-600 focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-indigo-500 transition-all"
+                  className="w-full bg-white/50 border border-gray-200 rounded-none pl-12 pr-4 py-3 text-theme-text placeholder:text-slate-600 focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-theme-text/80">Event Currency</label>
+              <label className="text-sm font-sans font-medium text-theme-text/80">Event Currency</label>
               <select
                 value={formData.currency || 'INR'}
                 onChange={e => setFormData({ ...formData, currency: e.target.value })}
-                className="w-full bg-white/50 border border-theme-primary/20 rounded-xl px-4 py-3 text-theme-text focus:outline-none focus:border-theme-primary focus:ring-1 focus:ring-indigo-500 transition-all"
+                className="w-full bg-white/50 border border-gray-200 rounded-none px-4 py-3 text-theme-text focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
               >
                 <option value="INR">INR (₹)</option>
                 <option value="USD">USD ($)</option>
@@ -1891,17 +1914,17 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             </div>
 
             <div className="col-span-1 md:col-span-2 space-y-2">
-              <label className="text-sm font-semibold text-theme-text/80">Event Cover</label>
+              <label className="text-sm font-sans font-medium text-theme-text/80">Event Cover</label>
               <div className="flex items-center space-x-4">
                 {formData.image && (
-                  <img src={formData.image} alt="Event Cover Preview" className="w-32 h-20 object-cover rounded-xl border border-theme-primary/20 shadow-md" />
+                  <img src={formData.image} alt="Event Cover Preview" className="w-32 h-20 object-cover rounded-none border border-gray-200 shadow-md" />
                 )}
                 <button
                   type="button"
                   onClick={() => setIsDesigningCover(true)}
-                  className="px-5 py-3 bg-theme-bg hover:bg-slate-700 text-theme-text rounded-xl text-sm font-semibold transition-all flex items-center space-x-2 border border-theme-primary/20"
+                  className="px-5 py-3 bg-theme-bg hover:bg-slate-700 text-theme-text rounded-none text-sm font-sans font-medium transition-all flex items-center space-x-2 border border-gray-200"
                 >
-                  <ImageIcon className="w-5 h-5 text-theme-primary" />
+                  <ImageIcon className="w-5 h-5 text-black" />
                   <span>{formData.image ? 'Edit Cover Design' : 'Design Event Cover'}</span>
                 </button>
               </div>
@@ -1910,22 +1933,22 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-stone-800/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-theme-text">Custom Registration Form</h3>
+                  <h3 className="text-lg font-serif font-normal text-theme-text">Custom Registration Form</h3>
                   <p className="text-xs text-theme-text/60">Add extra fields like 'Registration No.' or 'Branch' to ask during checkout.</p>
                 </div>
-                <button type="button" onClick={addFormField} className="px-4 py-2 bg-theme-primary/20 text-theme-primary hover:bg-theme-primary/30 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-all">
+                <button type="button" onClick={addFormField} className="px-4 py-2 bg-black/20 text-black hover:bg-black/30 rounded-sm text-sm font-sans font-medium flex items-center space-x-2 transition-all">
                   <Plus className="w-4 h-4" /> <span>Add Field</span>
                 </button>
               </div>
 
               <div className="space-y-3">
                 {(formData.customFormFields || []).map((field, index) => (
-                  <div key={field.id} className="flex flex-col md:flex-row items-center gap-4 p-3 bg-theme-bg/40 border border-theme-primary/20 rounded-xl relative">
+                  <div key={field.id} className="flex flex-col md:flex-row items-center gap-4 p-3 bg-theme-bg/40 border border-gray-200 rounded-none relative">
                     <div className="flex-1 w-full">
-                      <input type="text" required value={field.label} onChange={e => updateFormField(field.id, 'label', e.target.value)} className="w-full bg-white border border-theme-primary/20 rounded-lg px-3 py-2 text-sm text-theme-text" placeholder="Field Label (e.g., Roll No.)" />
+                      <input type="text" required value={field.label} onChange={e => updateFormField(field.id, 'label', e.target.value)} className="w-full bg-white border border-gray-200 rounded-sm px-3 py-2 text-sm text-theme-text" placeholder="Field Label (e.g., Roll No.)" />
                     </div>
                     <div className="w-full md:w-48">
-                      <select value={field.type} onChange={e => updateFormField(field.id, 'type', e.target.value)} className="w-full bg-white border border-theme-primary/20 rounded-lg px-3 py-2 text-sm text-theme-text">
+                      <select value={field.type} onChange={e => updateFormField(field.id, 'type', e.target.value)} className="w-full bg-white border border-gray-200 rounded-sm px-3 py-2 text-sm text-theme-text">
                         <option value="text">Short Text</option>
                         <option value="email">Email</option>
                         <option value="number">Number</option>
@@ -1933,7 +1956,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     </div>
                     <div className="flex items-center space-x-2">
                       <label className="text-sm text-theme-text/80 flex items-center space-x-2 cursor-pointer">
-                        <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, 'required', e.target.checked)} className="rounded text-theme-primary focus:ring-theme-primary bg-white border-slate-600" />
+                        <input type="checkbox" checked={field.required} onChange={e => updateFormField(field.id, 'required', e.target.checked)} className="rounded text-black focus:ring-theme-primary bg-white border-slate-600" />
                         <span>Required</span>
                       </label>
                       <button type="button" onClick={() => removeFormField(field.id)} className="p-2 text-theme-text/50 hover:text-red-400">
@@ -1943,7 +1966,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                   </div>
                 ))}
                 {(!formData.customFormFields || formData.customFormFields.length === 0) && (
-                  <div className="text-sm text-theme-text/50 italic p-4 border border-dashed border-theme-primary/20 rounded-xl text-center">
+                  <div className="text-sm text-theme-text/50 italic p-4 border border-dashed border-gray-200 rounded-none text-center">
                     No custom fields added. Attendees will only be asked for Name and Email.
                   </div>
                 )}
@@ -1953,17 +1976,17 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             <div className="col-span-1 md:col-span-2 space-y-4 pt-4 border-t border-stone-800/50">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-theme-text">Ticket Tiers</h3>
+                  <h3 className="text-lg font-serif font-normal text-theme-text">Ticket Tiers</h3>
                   <p className="text-xs text-theme-text/60">Create multiple ticket types (GA, VIP) and design a unique pass for each.</p>
                 </div>
-                <button type="button" onClick={addTier} className="px-4 py-2 bg-theme-primary/20 text-theme-primary hover:bg-theme-primary/30 rounded-lg text-sm font-semibold flex items-center space-x-2 transition-all">
+                <button type="button" onClick={addTier} className="px-4 py-2 bg-black/20 text-black hover:bg-black/30 rounded-sm text-sm font-sans font-medium flex items-center space-x-2 transition-all">
                   <Plus className="w-4 h-4" /> <span>Add Tier</span>
                 </button>
               </div>
 
               <div className="space-y-4">
                 {formData.tiers.map((tier, index) => (
-                  <div key={tier.id} className="p-4 bg-theme-bg/40 border border-theme-primary/20 rounded-xl relative">
+                  <div key={tier.id} className="p-4 bg-theme-bg/40 border border-gray-200 rounded-none relative">
                     {formData.tiers.length > 1 && (
                       <button type="button" onClick={() => removeTier(tier.id)} className="absolute top-2 right-2 text-theme-text/50 hover:text-red-400">
                         <Trash2 className="w-4 h-4" />
@@ -1972,16 +1995,16 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 pr-6">
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-theme-text/60">Tier Name</label>
-                        <input type="text" required value={tier.name} onChange={e => updateTier(tier.id, 'name', e.target.value)} className="w-full bg-white border border-theme-primary/20 rounded-lg px-3 py-2 text-sm text-theme-text" placeholder="VIP Pass" />
+                        <label className="text-xs font-sans font-medium text-theme-text/60">Tier Name</label>
+                        <input type="text" required value={tier.name} onChange={e => updateTier(tier.id, 'name', e.target.value)} className="w-full bg-white border border-gray-200 rounded-sm px-3 py-2 text-sm text-theme-text" placeholder="VIP Pass" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-theme-text/60">Price ({formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'GBP' ? '£' : '₹'})</label>
-                        <input type="number" min="0" step="0.01" required value={tier.price} onChange={e => updateTier(tier.id, 'price', e.target.value)} className="w-full bg-white border border-theme-primary/20 rounded-lg px-3 py-2 text-sm text-theme-text" placeholder="150" />
+                        <label className="text-xs font-sans font-medium text-theme-text/60">Price ({formData.currency === 'USD' ? '$' : formData.currency === 'EUR' ? '€' : formData.currency === 'GBP' ? '£' : '₹'})</label>
+                        <input type="number" min="0" step="0.01" required value={tier.price} onChange={e => updateTier(tier.id, 'price', e.target.value)} className="w-full bg-white border border-gray-200 rounded-sm px-3 py-2 text-sm text-theme-text" placeholder="150" />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-semibold text-theme-text/60">Capacity</label>
-                        <input type="number" min="1" required value={tier.capacity} onChange={e => updateTier(tier.id, 'capacity', e.target.value)} className="w-full bg-white border border-theme-primary/20 rounded-lg px-3 py-2 text-sm text-theme-text" placeholder="50" />
+                        <label className="text-xs font-sans font-medium text-theme-text/60">Capacity</label>
+                        <input type="number" min="1" required value={tier.capacity} onChange={e => updateTier(tier.id, 'capacity', e.target.value)} className="w-full bg-white border border-gray-200 rounded-sm px-3 py-2 text-sm text-theme-text" placeholder="50" />
                       </div>
                     </div>
 
@@ -1990,7 +2013,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                       <button
                         type="button"
                         onClick={() => setActiveTierId(tier.id)}
-                        className="px-4 py-2 bg-theme-primary/10 hover:bg-theme-primary/20 text-theme-primary border border-theme-primary/20 rounded-lg text-sm font-bold transition-all flex items-center space-x-2"
+                        className="px-4 py-2 bg-gray-100 hover:bg-black/20 text-black border border-gray-200 rounded-sm text-sm font-serif font-normal transition-all flex items-center space-x-2"
                       >
                         <Ticket className="w-4 h-4" />
                         <span>{tier.template ? 'Edit Pass Design' : 'Design Custom Pass'}</span>
@@ -2002,11 +2025,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             </div>
           </div>
 
-          <div className="pt-6 border-t border-theme-primary/20 flex justify-end space-x-4">
-            <button type="button" onClick={() => { setIsCreating(false); setEditingEventId(null); }} className="px-6 py-3 rounded-xl font-medium text-theme-text/80 hover:bg-theme-bg transition-colors">
+          <div className="pt-6 border-t border-gray-200 flex justify-end space-x-4">
+            <button type="button" onClick={() => { setIsCreating(false); setEditingEventId(null); }} className="px-6 py-3 rounded-none font-medium text-theme-text/80 hover:bg-theme-bg transition-colors">
               Cancel
             </button>
-            <button type="submit" className="px-8 py-3 rounded-xl font-bold bg-theme-primary hover:bg-theme-primary text-theme-text shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] transition-all">
+            <button type="submit" className="px-8 py-3 rounded-none font-serif font-normal bg-black hover:bg-gray-800 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] transition-all">
               {editingEventId ? 'Save Changes' : 'Launch Event'}
             </button>
           </div>
@@ -2062,21 +2085,21 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-theme-text tracking-tight">Events Management</h2>
+          <h2 className="text-2xl font-serif font-normal text-theme-text tracking-tight">Events Management</h2>
           <p className="text-theme-text/60 text-sm mt-1">Manage your active events and launch new ones.</p>
         </div>
         {['ORG_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role) && (
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsAIChatOpen(true)}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 border border-indigo-400"
+              className="flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none font-sans font-medium transition-all shadow-lg shadow-gray-500/20 border border-gray-500"
             >
               <MessageSquare className="w-5 h-5" />
               <span>Ask AI to Create</span>
             </button>
             <button
               onClick={() => setIsCreating(true)}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20"
+              className="flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-none font-sans font-medium transition-all shadow-lg shadow-gray-500/20"
             >
               <Plus className="w-5 h-5" />
               <span>Create Event</span>
@@ -2089,22 +2112,22 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {events.map(event => {
           const stats = getEventStats(event);
           return (
-            <div key={event.id} onClick={(e) => { if (e.target.tagName !== 'BUTTON') setViewingEventId(event.id); }} className="glass-panel rounded-2xl border border-theme-primary/20 overflow-hidden flex flex-col relative group cursor-pointer hover:border-theme-primary/50 transition-colors">
+            <div key={event.id} onClick={(e) => { if (e.target.tagName !== 'BUTTON') setViewingEventId(event.id); }} className="glass-panel rounded-none border border-gray-200 overflow-hidden flex flex-col relative group cursor-pointer hover:border-black/50 transition-colors">
               <div className="h-32 bg-white relative">
                 <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" />
-                <div className="absolute top-3 right-3 px-2 py-1 bg-white/80 backdrop-blur rounded border border-theme-primary/20 text-xs font-semibold text-theme-text/80">
+                <div className="absolute top-3 right-3 px-2 py-1 bg-white/80 backdrop-blur rounded border border-gray-200 text-xs font-sans font-medium text-theme-text/80">
                   ID: {event.id.toString().padStart(4, '0')}
                 </div>
               </div>
               <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-lg font-bold text-theme-text mb-2 line-clamp-1">{event.title}</h3>
+                <h3 className="text-lg font-serif font-normal text-theme-text mb-2 line-clamp-1">{event.title}</h3>
                 <div className="space-y-1 mb-4 text-sm text-theme-text/60">
                   <div className="flex items-center space-x-2"><Calendar className="w-3.5 h-3.5" /> <span>{formatEventDate(event.date)}</span></div>
                   <div className="flex items-center space-x-2"><MapPin className="w-3.5 h-3.5" /> <span className="line-clamp-1">{event.venue}</span></div>
                 </div>
                 <div className="mt-auto pt-4 border-t border-stone-800 flex justify-between items-center text-sm">
-                  <div className="text-theme-text/80"><span className="font-bold text-theme-text">{stats.totalAvail}</span> / {stats.totalCap} left</div>
-                  <div className="font-bold text-theme-primary">{stats.minPrice === 0 ? "Free" : `From $${stats.minPrice.toFixed(2)}`}</div>
+                  <div className="text-theme-text/80"><span className="font-serif font-normal text-theme-text">{stats.totalAvail}</span> / {stats.totalCap} left</div>
+                  <div className="font-serif font-normal text-black">{stats.minPrice === 0 ? "Free" : `From $${stats.minPrice.toFixed(2)}`}</div>
                 </div>
               </div>
             </div>
@@ -2117,15 +2140,15 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 }
 
 function NavItem({ icon, label, active, onClick }) {
-  const baseStyles = "flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 cursor-pointer font-medium text-sm";
+  const baseStyles = "flex items-center space-x-3 px-4 py-3 rounded-none transition-all duration-200 cursor-pointer font-medium text-sm";
   const variants = {
     default: active
-      ? "bg-theme-primary/10 text-theme-primary border border-theme-primary/20 shadow-inner"
+      ? "bg-gray-100 text-black border border-gray-200 shadow-inner"
       : "text-theme-text/60 hover:bg-theme-bg/50 hover:text-theme-text",
   };
   return (
     <div onClick={onClick} className={`${baseStyles} ${variants.default}`}>
-      <div className={active ? "text-theme-primary" : ""}>{icon}</div>
+      <div className={active ? "text-black" : ""}>{icon}</div>
       <span>{label}</span>
     </div>
   );
@@ -2349,13 +2372,13 @@ function AdminDashboardInner() {
       <ParticleBackground />
 
       <aside className="w-72 hidden md:flex flex-col relative z-20 shrink-0 h-full p-4 pl-6 py-6">
-        <div className="h-full w-full bg-white/40 backdrop-blur-xl border border-theme-primary/10 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-2xl flex flex-col overflow-hidden">
-          <div className="p-6 border-b border-theme-primary/10 bg-theme-bg/20">
+        <div className="h-full w-full bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex flex-col overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-theme-bg/20">
             <div className="flex items-center space-x-3 text-theme-text">
-              <div className="w-8 h-8 rounded-lg bg-theme-primary/20 border border-theme-primary/30 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                <Settings className="w-4 h-4 text-theme-primary" />
+              <div className="w-8 h-8 rounded-sm bg-black/20 border border-black/30 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.2)]">
+                <Settings className="w-4 h-4 text-black" />
               </div>
-              <span className="font-bold text-lg tracking-tight">EventSphere</span>
+              <span className="font-serif font-normal text-lg tracking-tight">EventSphere</span>
             </div>
           </div>
 
@@ -2363,12 +2386,12 @@ function AdminDashboardInner() {
             {viewingEventId ? (
               <>
                 <div className="pt-2 pb-4">
-                  <button onClick={() => setViewingEventId(null)} className="flex items-center space-x-2 text-theme-text/60 hover:text-theme-text transition-colors text-sm font-semibold">
+                  <button onClick={() => setViewingEventId(null)} className="flex items-center space-x-2 text-theme-text/60 hover:text-theme-text transition-colors text-sm font-sans font-medium">
                     <span>← Back to Global Admin</span>
                   </button>
                 </div>
                 <div className="pt-2 pb-2">
-                  <div className="px-3 text-xs font-bold text-theme-primary uppercase tracking-widest font-mono">Event Controls</div>
+                  <div className="px-3 text-xs font-serif font-normal text-black uppercase tracking-widest font-mono">Event Controls</div>
                 </div>
                 <NavItem icon={<LayoutDashboard size={18} />} label="Overview" active={eventActiveTab === 'overview'} onClick={() => setEventActiveTab('overview')} />
                 <NavItem icon={<LayoutDashboard size={18} />} label="Page Design" active={eventActiveTab === 'design'} onClick={() => setEventActiveTab('design')} />
@@ -2387,7 +2410,7 @@ function AdminDashboardInner() {
                 )}
 
                 <div className="pt-4 pb-2">
-                  <div className="px-3 text-xs font-bold text-slate-600 uppercase tracking-widest font-mono">Operations</div>
+                  <div className="px-3 text-xs font-serif font-normal text-slate-600 uppercase tracking-widest font-mono">Operations</div>
                 </div>
 
                 <NavItem icon={<Users size={18} />} label="Attendee Register" active={activeTab === 'attendees'} onClick={() => setActiveTab('attendees')} />
@@ -2396,10 +2419,10 @@ function AdminDashboardInner() {
             )}
           </nav>
 
-          <div className="p-4 border-t border-theme-primary/10 bg-theme-bg/10">
-            <div className="flex items-center space-x-3 px-3 py-2 rounded-xl hover:bg-white/[0.03] transition-colors border border-transparent hover:border-theme-primary/10">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-theme-primary to-teal-500 p-0.5 shadow-lg shrink-0 overflow-hidden">
-                <div className="w-full h-full rounded-full bg-white flex items-center justify-center text-xs font-bold text-theme-primary overflow-hidden">
+          <div className="p-4 border-t border-gray-100 bg-theme-bg/10">
+            <div className="flex items-center space-x-3 px-3 py-2 rounded-none hover:bg-white/[0.03] transition-colors border border-transparent hover:border-gray-100">
+              <div className="w-8 h-8 rounded-none bg-gradient-to-r from-theme-primary to-gray-500 p-0.5 shadow-lg shrink-0 overflow-hidden">
+                <div className="w-full h-full rounded-none bg-white flex items-center justify-center text-xs font-serif font-normal text-black overflow-hidden">
                   {user?.profile_image ? (
                     <img src={user.profile_image} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
@@ -2408,10 +2431,10 @@ function AdminDashboardInner() {
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-bold text-theme-text truncate">{user?.name}</div>
-                <div className="text-xs text-theme-text/50 font-mono truncate">{user?.email}</div>
+                <div className="text-sm font-serif font-normal text-theme-text truncate">{user?.name}</div>
+                <div className="text-xs text-gray-500 font-mono font-medium truncate">{user?.email}</div>
               </div>
-              <button onClick={logout} className="p-2 hover:bg-white/10 rounded-lg text-theme-text/60 hover:text-rose-400 transition-colors" title="Logout">
+              <button onClick={logout} className="p-2 hover:bg-white/10 rounded-sm text-theme-text/60 hover:text-rose-400 transition-colors" title="Logout">
                 <LogOut size={16} />
               </button>
             </div>
@@ -2421,9 +2444,9 @@ function AdminDashboardInner() {
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative z-20 py-6 pr-6">
 
-        <header className="h-16 mb-6 bg-white/40 backdrop-blur-xl border border-theme-primary/10 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-2xl flex items-center justify-between px-6 shrink-0 relative overflow-hidden">
+        <header className="h-16 mb-6 bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex items-center justify-between px-6 shrink-0 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-white/[0.01] to-transparent pointer-events-none" />
-          <div className="font-bold text-theme-text flex items-center tracking-wide text-lg relative z-10">
+          <div className="font-serif font-normal text-theme-text flex items-center tracking-wide text-lg relative z-10">
             {viewingEventId
               ? (events.find(e => e.id === viewingEventId)?.title || 'Event Detail')
               : activeTab === 'events_management' ? 'Events Management'
@@ -2435,20 +2458,20 @@ function AdminDashboardInner() {
           <div className="flex items-center space-x-4 relative z-10">
             <button 
               onClick={() => setShowSettingsModal(true)}
-              className="p-2 text-theme-text/60 hover:text-theme-text rounded-lg hover:bg-white/[0.05] border border-transparent hover:border-theme-primary/10 transition-all"
+              className="p-2 text-theme-text/60 hover:text-theme-text rounded-sm hover:bg-white/[0.05] border border-transparent hover:border-gray-100 transition-all"
             >
               <Settings className="w-5 h-5" />
             </button>
-            <button className="p-2 text-theme-text/60 hover:text-theme-text rounded-lg hover:bg-white/[0.05] border border-transparent hover:border-theme-primary/10 transition-all relative">
+            <button className="p-2 text-theme-text/60 hover:text-theme-text rounded-sm hover:bg-white/[0.05] border border-transparent hover:border-gray-100 transition-all relative">
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-theme-primary rounded-full shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-none shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto rounded-2xl relative">
+        <div className="flex-1 overflow-y-auto rounded-none relative">
           {activeTab === 'events_management' ? (
-            <div className="bg-white/40 backdrop-blur-xl border border-theme-primary/10 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-2xl p-6 min-h-full">
+            <div className="bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-6 min-h-full">
               <EventManager events={events} allAttendees={allAttendees || []} setAllAttendees={setAllAttendees} onAddEvent={handleAddEvent} onEditEvent={handleEditEvent} onDeleteEvent={handleDeleteEvent} viewingEventId={viewingEventId} setViewingEventId={setViewingEventId} eventActiveTab={eventActiveTab} />
             </div>
           ) : activeTab === 'attendees' ? (

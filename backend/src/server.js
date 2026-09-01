@@ -9,6 +9,9 @@ const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
 const multer = require('multer');
+const { execSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Routes
@@ -639,10 +642,44 @@ app.post('/api/v1/tickets/scan', async (req, res) => {
   }
 });
 
-// ===== START SERVER =====
-app.listen(PORT, async () => {
-  console.log(`\n🚀 EventSphere API Server`);
-  console.log(`   Listening at: http://localhost:${PORT}`);
-  console.log(`   SMTP: ${process.env.SMTP_HOST ? `✅ ${process.env.SMTP_HOST}` : '⚠️  Ethereal fallback'}`);
-  console.log(`   DB:   ${process.env.DATABASE_URL ? '✅' : '❌ DATABASE_URL missing'}\n`);
-});
+// ===== AUTO DATABASE SETUP & START SERVER =====
+async function startServer() {
+  // Auto-create database if it doesn't exist
+  try {
+    const dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
+    const dbPath = dbUrl.replace('file:', '').replace('./', path.join(__dirname, '..', ''));
+    const prismaDir = path.join(__dirname, '..', 'prisma');
+
+    if (!fs.existsSync(dbPath.trim())) {
+      console.log('⚙️  Database not found. Creating automatically...');
+      execSync('npx prisma db push --skip-generate', {
+        cwd: path.join(__dirname, '..'),
+        stdio: 'inherit'
+      });
+      console.log('✅ Database created and schema synced.');
+    } else {
+      // Database exists — ensure schema is up to date
+      try {
+        execSync('npx prisma db push --skip-generate', {
+          cwd: path.join(__dirname, '..'),
+          stdio: 'pipe'
+        });
+      } catch (e) {
+        // Schema already in sync, ignore
+      }
+    }
+  } catch (err) {
+    console.error('⚠️  Auto database setup failed:', err.message);
+    console.log('   Run manually: cd backend && npx prisma db push');
+  }
+
+  app.listen(PORT, async () => {
+    console.log(`\n🚀 EventSphere API Server`);
+    console.log(`   Listening at: http://localhost:${PORT}`);
+    console.log(`   SMTP: ${process.env.SMTP_HOST ? `✅ ${process.env.SMTP_HOST}` : '⚠️  Ethereal fallback'}`);
+    console.log(`   DB:   ${process.env.DATABASE_URL ? '✅' : '❌ DATABASE_URL missing'}\n`);
+  });
+}
+
+startServer();
+
