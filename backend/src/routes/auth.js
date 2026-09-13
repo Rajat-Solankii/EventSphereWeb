@@ -229,6 +229,7 @@ router.post('/login', authLimiter, async (req, res) => {
     return res.status(200).json({
       success: true,
       accessToken,
+      refreshToken,
       user: {
         id: user.id,
         name: user.name,
@@ -247,7 +248,7 @@ router.post('/login', authLimiter, async (req, res) => {
 // POST /api/auth/refresh
 router.post('/refresh', async (req, res) => {
   try {
-    const token = req.cookies?.refresh_token;
+    const token = req.cookies?.refresh_token || req.body.refreshToken;
     if (!token) {
       return res.status(401).json({ success: false, message: 'No refresh token found.' });
     }
@@ -283,6 +284,7 @@ router.post('/refresh', async (req, res) => {
     return res.status(200).json({
       success: true,
       accessToken,
+      refreshToken: newRefreshToken,
       user: {
         id: session.user.id,
         name: session.user.name,

@@ -257,43 +257,50 @@ export default function Registration() {
     setOtpError('');
   };
 
-  const executeBooking = () => {
+  const executeBooking = async () => {
     setBookingState('loading');
-    setTimeout(() => {
-      const passId = `EVT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-      const newAttendee = {
-        passId,
-        name: finalName,
-        email: finalEmail,
-        phone: finalPhone,
-        customData: customFormData,
-        eventId: targetEvent.id,
-        eventTitle: targetEvent.title,
-        eventDate: targetEvent.date,
-        eventVenue: targetEvent.venue,
-        tierId: selectedTier.id,
-        tierName: selectedTier.name,
-        timestamp: new Date().toISOString()
-      };
-      
-      const existing = JSON.parse(localStorage.getItem('eventos_attendees') || '[]');
-      localStorage.setItem('eventos_attendees', JSON.stringify([...existing, newAttendee]));
-      
-      // Trigger live storage event for same-window updates
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'eventos_attendees'
-      }));
-
-      // Send email via backend (fails silently if backend not running)
-      fetch('http://localhost:3000/api/v1/tickets/book', {
+    
+    let passId = `EVT-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    const newAttendee = {
+      passId,
+      name: finalName,
+      email: finalEmail,
+      phone: finalPhone,
+      customData: customFormData,
+      eventId: targetEvent.id,
+      eventTitle: targetEvent.title,
+      eventDate: targetEvent.date,
+      eventVenue: targetEvent.venue,
+      tierId: selectedTier.id,
+      tierName: selectedTier.name,
+      timestamp: new Date().toISOString()
+    };
+    
+    try {
+      const res = await fetch('http://localhost:3000/api/v1/tickets/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attendee: { ...newAttendee, paymentScreenshot } })
-      }).catch(err => console.log('SMTP backend not reachable', err));
-      
-      setGeneratedPassId(passId);
-      setBookingState('success');
-    }, 1500);
+      });
+      const data = await res.json();
+      if (data.success && data.passId) {
+        passId = data.passId;
+        newAttendee.passId = passId;
+      }
+    } catch (err) {
+      console.log('Backend not reachable, using local mock passId', err);
+    }
+    
+    const existing = JSON.parse(localStorage.getItem('eventos_attendees') || '[]');
+    localStorage.setItem('eventos_attendees', JSON.stringify([...existing, newAttendee]));
+    
+    // Trigger live storage event for same-window updates
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'eventos_attendees'
+    }));
+
+    setGeneratedPassId(passId);
+    setBookingState('success');
   };
 
   const handleBookTicket = async () => {

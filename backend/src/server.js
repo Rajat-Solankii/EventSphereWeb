@@ -624,20 +624,82 @@ app.post('/api/v1/tickets/scan', async (req, res) => {
     const result = await prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.findUnique({ where: { id: ticketId } });
       if (!ticket) throw new Error('Ticket not found');
+      
+      const attendeeData = { 
+          id: ticket.id, 
+          name: ticket.attendee_name, 
+          email: ticket.attendee_email, 
+          roll_number: ticket.student_roll_no,
+          tier_name: ticket.tier_name,
+          payment_screenshot: ticket.payment_screenshot,
+          exit_image: ticket.exit_image
+      };
+
       switch (ticket.status) {
         case 'OUTSIDE':
           await tx.ticket.update({ where: { id: ticketId }, data: { status: 'INSIDE' } });
           await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'ENTRY', roll_number: ticket.student_roll_no } });
-          return { success: true, status: 'INSIDE', message: 'Access Granted. Welcome!', attendee: { name: ticket.attendee_name, roll_number: ticket.student_roll_no } };
+          return { success: true, status: 'INSIDE', message: 'Access Granted. Welcome!', attendee: attendeeData };
         case 'INSIDE':
           await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'DENIED', roll_number: ticket.student_roll_no } });
-          return { success: false, status: 'INSIDE', message: 'Ticket already scanned inside.', attendee: { name: ticket.attendee_name, roll_number: ticket.student_roll_no } };
+          return { success: false, status: 'INSIDE', message: 'Ticket already scanned inside.', attendee: attendeeData };
+        case 'TEMPORARY_OUT':
+          await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'DENIED', roll_number: ticket.student_roll_no } });
+          return { success: false, status: 'TEMPORARY_OUT', message: 'User is temporarily out. Please re-enter.', attendee: attendeeData };
+        case 'PENDING':
+          await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'DENIED', roll_number: ticket.student_roll_no } });
+          return { success: false, status: 'PENDING', message: 'Ticket is pending verification.', attendee: attendeeData };
+        case 'DECLINED':
+          await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'DENIED', roll_number: ticket.student_roll_no } });
+          return { success: false, status: 'DECLINED', message: 'Ticket payment was declined.', attendee: attendeeData };
         default: throw new Error('Unknown status');
       }
     });
     res.status(200).json(result);
   } catch (err) {
     if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/v1/tickets/:id/temp-exit', async (req, res) => {
+  const { id } = req.params;
+  const { exit_image } = req.body;
+  if (!exit_image) return res.status(400).json({ success: false, message: 'Exit image is required.' });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const ticket = await tx.ticket.findUnique({ where: { id } });
+      if (!ticket) throw new Error('Ticket not found');
+      if (ticket.status !== 'INSIDE') throw new Error('User is not inside.');
+      
+      await tx.ticket.update({ where: { id }, data: { status: 'TEMPORARY_OUT', exit_image } });
+      await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'TEMPORARY_EXIT', roll_number: ticket.student_roll_no, captured_photo_url: exit_image } });
+      return { success: true, message: 'User marked as temporarily out.' };
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
+    if (err.message === 'User is not inside.') return res.status(400).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/v1/tickets/:id/re-enter', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const ticket = await tx.ticket.findUnique({ where: { id } });
+      if (!ticket) throw new Error('Ticket not found');
+      if (ticket.status !== 'TEMPORARY_OUT') throw new Error('User is not temporarily out.');
+      
+      await tx.ticket.update({ where: { id }, data: { status: 'INSIDE', exit_image: null } });
+      await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'RE_ENTRY', roll_number: ticket.student_roll_no } });
+      return { success: true, message: 'Access Granted. Welcome back!' };
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
+    if (err.message === 'User is not temporarily out.') return res.status(400).json({ success: false, message: err.message });
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });
@@ -682,4 +744,5 @@ async function startServer() {
 }
 
 startServer();
+
 

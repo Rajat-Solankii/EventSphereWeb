@@ -114,6 +114,7 @@ model Ticket {
   tier_name       String?
   custom_data     String?
   payment_screenshot String?
+  exit_image      String?
   status          String   @default("OUTSIDE")
   created_at      DateTime @default(now())
 
