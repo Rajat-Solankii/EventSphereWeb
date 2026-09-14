@@ -736,13 +736,27 @@ async function startServer() {
   }
 
   app.listen(PORT, async () => {
+    const os = require('os');
+    const interfaces = os.networkInterfaces();
+    const ips = [];
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          ips.push(iface.address);
+        }
+      }
+    }
+
     console.log(`\n🚀 EventSphere API Server`);
     console.log(`   Listening at: http://localhost:${PORT}`);
+    if (ips.length > 0) {
+      ips.forEach(ip => {
+        console.log(`   Phone App URL: http://${ip}:${PORT} (Use this for mobile/LAN testing)`);
+      });
+    }
     console.log(`   SMTP: ${process.env.SMTP_HOST ? `✅ ${process.env.SMTP_HOST}` : '⚠️  Ethereal fallback'}`);
     console.log(`   DB:   ${process.env.DATABASE_URL ? '✅' : '❌ DATABASE_URL missing'}\n`);
   });
 }
 
 startServer();
-
-
