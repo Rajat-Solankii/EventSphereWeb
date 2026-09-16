@@ -3,7 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const { verifyToken, requireRole, requireEventAccess } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
-const { Groq } = require('groq-sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 function getSmtpTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -240,9 +240,9 @@ router.get('/ai-chat/history', verifyToken, async (req, res) => {
 // ===== AI CHAT EVENT GENERATION =====
 router.post('/ai-chat', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (req, res) => {
   try {
-    const apiKey = process.env.GROQ_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return res.status(400).json({ error: 'Groq API Key is missing. Please add GROQ_API_KEY to your backend .env file.' });
+      return res.status(400).json({ error: 'Gemini API Key is missing. Please add GEMINI_API_KEY to your backend .env file.' });
     }
 
     const { messages } = req.body;
@@ -250,19 +250,22 @@ router.post('/ai-chat', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), a
       return res.status(400).json({ error: 'Messages array is required.' });
     }
 
-    const groq = new Groq({ apiKey });
+    const genAI = new GoogleGenerativeAI(apiKey);
 
-    const systemPrompt = {
-      role: 'system',
-      content: `You are an AI assistant for EventSphere helping an event organizer create a new event.
+    const systemInstruction = `You are an AI assistant for EventSphere helping an event organizer create a new event.
 Your goal is to gather all necessary details to create the event: Title, Date & Time, Venue, Total Capacity, Currency (INR, USD, EUR, GBP), and Ticket Tiers (Name, Price, Capacity).
 Ask the user questions one at a time if information is missing. Keep your responses concise, friendly, and focused.
+
+VISION & IMAGE ANALYSIS:
+If the user uploads an image (like a poster, flyer, venue photo, or ticket design):
+1. Extract any relevant event details (Title, Date, Venue, etc.) from the text in the image and automatically use them for the event setup.
+2. If the user asks for feedback on the image (e.g., "how is it", "is this venue good?", "does this poster look okay?"), you MUST act as an expert event planner and provide helpful, constructive feedback based on the visual contents of the image. DO NOT reject these questions as unrelated. 
 
 IMPORTANT FORMATTING RULES FOR JSON OUTPUT:
 - ALWAYS properly format and Title Case the event "title" and "venue" (e.g., if user says "main audi in christ university", you write "Main Audi, Christ University").
 - ALWAYS format the "date" as a valid ISO-8601 string (e.g., "YYYY-MM-DDTHH:mm").
 
-STRICT RULE: If the user asks a question or makes a statement completely unrelated to event creation (e.g., general knowledge, coding, math, history), you MUST decline very warmly and politely. For example: "I'd love to chat about that, but my expertise is strictly limited to helping you craft amazing events! 😊 Let's get back to your event setup..." Do NOT answer the irrelevant question under any circumstances.
+STRICT RULE: If the user asks a question completely unrelated to event creation OR the images they uploaded (e.g., coding, math, history), you MUST decline very warmly and politely. For example: "I'd love to chat about that, but my expertise is strictly limited to helping you craft amazing events! 😊 Let's get back to your event setup..." Do NOT answer irrelevant questions.
 
 Once you have ALL the necessary information, you MUST output ONLY a JSON object representing the event data and NOTHING ELSE. Do not use markdown blocks for the JSON.
 The JSON MUST match this structure exactly:
@@ -281,20 +284,37 @@ The JSON MUST match this structure exactly:
       { "name": "General Admission", "price": 0, "capacity": 100 }
     ]
   }
-}`
-    };
+}`;
 
-    const groqMessages = [systemPrompt, ...messages];
-
-    const chatCompletion = await groq.chat.completions.create({
-      messages: groqMessages,
-      model: 'qwen/qwen3.6-27b',
-      temperature: 0.5,
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-3.1-flash-lite",
+      systemInstruction: systemInstruction 
     });
-    let reply = chatCompletion.choices[0]?.message?.content || '';
+
+    const geminiMessages = messages.map(m => {
+      const role = m.role === 'assistant' ? 'model' : 'user';
+      const parts = [];
+      if (m.content) parts.push({ text: m.content });
+      if (m.image) {
+        // Parse data URL: "data:image/png;base64,..."
+        const matches = m.image.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          parts.push({
+            inlineData: {
+              mimeType: matches[1],
+              data: matches[2]
+            }
+          });
+        }
+      }
+      return { role, parts };
+    });
+
+    const result = await model.generateContent({
+      contents: geminiMessages
+    });
     
-    // Strip <think> blocks from reasoning models
-    reply = reply.replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim();
+    let reply = result.response.text().trim();
     
     // Check if reply is the final JSON
     let parsedJson = null;

@@ -368,13 +368,18 @@ export default function Registration() {
   const upiConfig = targetEvent?.upi_config ? (typeof targetEvent.upi_config === 'string' ? JSON.parse(targetEvent.upi_config) : targetEvent.upi_config) : null;
 
   return (
-    <div className="min-h-screen text-slate-200 font-sans relative flex flex-col" style={{ backgroundColor: pageConfig.bgColor, color: '#ffffff' }}>
+    <div className="fixed inset-0 w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: pageConfig.bgColor, color: pageConfig.textColor || '#ffffff', fontFamily: pageConfig.fontFamily || 'Inter, sans-serif' }}>
       <style>{`
         :root {
           --theme-primary: ${pageConfig.primaryColor};
+          --theme-text: ${pageConfig.textColor || '#ffffff'};
+          --theme-card-bg: ${pageConfig.cardBgColor || 'rgba(30, 41, 59, 0.4)'};
+          --theme-radius: ${pageConfig.buttonRadius || '0.75rem'};
         }
         .theme-btn {
           background-color: var(--theme-primary) !important;
+          border-radius: var(--theme-radius) !important;
+          color: var(--theme-text) !important;
           box-shadow: 0 0 20px color-mix(in srgb, var(--theme-primary) 40%, transparent);
         }
         .theme-btn:hover {
@@ -400,6 +405,9 @@ export default function Registration() {
           border-color: var(--theme-primary) !important;
           box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-primary) 30%, transparent);
         }
+        .theme-card-bg {
+          background-color: var(--theme-card-bg) !important;
+        }
       `}</style>
       
       {pageConfig.bgImage ? (
@@ -411,43 +419,45 @@ export default function Registration() {
         </>
       )}
 
-      <div className="flex-1 overflow-y-auto p-8 lg:p-12 z-10 relative w-full h-full flex flex-col items-center justify-center">
-        {isLoading ? (
-          <div className="text-center">
-            <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white">Loading Event...</h2>
-          </div>
-        ) : !targetEvent ? (
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Event Not Found</h2>
-            <p className="text-slate-400 mb-8">The event you are looking for does not exist or has been removed.</p>
-            <button onClick={() => navigate('/')} className="px-6 py-3 rounded-xl text-white font-bold transition-colors theme-btn">
-              Return Home
-            </button>
-          </div>
-        ) : (
-          <div className="max-w-4xl w-full mx-auto bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row">
-            {/* Event Info Left Column */}
-            <div className="w-full md:w-1/2 h-64 md:h-auto relative overflow-hidden bg-slate-900">
-              <img src={targetEvent.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-cover opacity-60" />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-8 w-full">
-                <h1 className="text-4xl font-black text-white leading-tight mb-4">{targetEvent.title}</h1>
-                <div className="space-y-3">
-                  <div className="flex items-center text-slate-300 space-x-3">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden z-10 relative w-full h-full">
+        <div className="min-h-full w-full flex flex-col items-center justify-center p-4 sm:p-8 lg:p-12">
+          {isLoading ? (
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white">Loading Event...</h2>
+            </div>
+          ) : !targetEvent ? (
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-white mb-4">Event Not Found</h2>
+              <p className="text-slate-400 mb-8">The event you are looking for does not exist or has been removed.</p>
+              <button onClick={() => navigate('/')} className="px-6 py-3 rounded-xl text-white font-bold transition-colors theme-btn">
+                Return Home
+              </button>
+            </div>
+          ) : (
+            <div className="max-w-3xl w-full mx-auto my-auto backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col theme-card-bg">
+            {/* Event Info Top Banner */}
+            <div className="w-full aspect-[16/9] sm:aspect-video relative overflow-hidden bg-slate-900 border-b border-slate-700">
+              <img src={targetEvent.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-cover" />
+            </div>
+
+            {/* Ticket Selection Content */}
+            <div className="w-full p-6 sm:p-8 flex flex-col justify-center">
+              {/* Event Header */}
+              <div className="mb-8 pb-8 border-b border-slate-700/50 text-center">
+                <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4">{targetEvent.title}</h1>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-6 text-slate-300">
+                  <div className="flex items-center space-x-2">
                     <Calendar className="w-5 h-5 theme-text" />
-                    <span>{targetEvent.date}</span>
+                    <span className="font-medium text-sm sm:text-base">{targetEvent.date}</span>
                   </div>
-                  <div className="flex items-center text-slate-300 space-x-3">
+                  <div className="flex items-center space-x-2">
                     <MapPin className="w-5 h-5 theme-text" />
-                    <span>{targetEvent.venue}</span>
+                    <span className="font-medium text-sm sm:text-base">{targetEvent.venue}</span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Ticket Selection Right Column */}
-            <div className="w-full md:w-1/2 p-8 flex flex-col justify-center min-h-[500px]">
               {bookingState === 'idle' || bookingState === 'loading' ? (
                 <>
                   {!selectedTier ? (
@@ -458,7 +468,7 @@ export default function Registration() {
                           <div 
                             key={tier.id}
                             onClick={() => tier.available > 0 && setSelectedTier(tier)}
-                            className={`p-5 rounded-2xl border-2 transition-all ${tier.available > 0 ? 'bg-slate-800/40 border-slate-700 theme-hover-border theme-hover-bg cursor-pointer shadow-lg' : 'bg-slate-900/50 border-slate-800 opacity-60 cursor-not-allowed'} flex justify-between items-center`}
+                            className={`p-5 rounded-2xl border-2 transition-all ${tier.available > 0 ? 'theme-card-bg border-slate-700 theme-hover-border theme-hover-bg cursor-pointer shadow-lg' : 'bg-slate-900/50 border-slate-800 opacity-60 cursor-not-allowed'} flex justify-between items-center`}
                           >
                             <div>
                               <h4 className="font-bold text-white text-lg">{tier.name}</h4>
@@ -477,7 +487,7 @@ export default function Registration() {
                         <button onClick={() => setSelectedTier(null)} className="text-sm theme-text font-semibold hover:opacity-80 transition-opacity">← Back to Tiers</button>
                       </div>
                       
-                      <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-5 space-y-4">
+                      <div className="theme-card-bg border border-slate-700 rounded-xl p-5 space-y-4">
                         <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
                           <span className="text-slate-300">Ticket Type</span>
                           <span className="font-bold text-white">{selectedTier.name}</span>
@@ -537,7 +547,7 @@ export default function Registration() {
                     <p className="text-slate-400">An OTP has been sent to <strong className="text-white">{finalEmail}</strong>.</p>
                   </div>
                   
-                  <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 mt-6">
+                  <div className="theme-card-bg border border-slate-700 rounded-xl p-6 mt-6">
                     <label className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 block">Enter OTP</label>
                     <input 
                       type="text" 
@@ -579,7 +589,7 @@ export default function Registration() {
                       </div>
                     </div>
                     
-                    <div className="bg-slate-800/40 border border-slate-700 rounded-xl p-6 mt-6">
+                    <div className="theme-card-bg border border-slate-700 rounded-xl p-6 mt-6">
                       <h4 className="text-lg font-bold text-white mb-4">Upload Screenshot</h4>
                       <p className="text-slate-400 text-sm mb-4">After completing the payment, upload a screenshot of the successful transaction to receive your pass.</p>
                       <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
@@ -640,7 +650,8 @@ export default function Registration() {
                 )}
               </div>
             </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

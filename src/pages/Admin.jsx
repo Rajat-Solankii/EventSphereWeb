@@ -64,6 +64,47 @@ function ToastProvider({ children }) {
 }
 const useToast = () => React.useContext(ToastContext);
 
+// ===== HELPERS FOR COLOR EXTRACTION =====
+const rgbToHsl = (r, g, b) => {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+  if (max === min) { h = s = 0; } 
+  else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+  return [h, s, l];
+};
+
+const hslToHex = (h, s, l) => {
+  let r, g, b;
+  if (s === 0) { r = g = b = l; } 
+  else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  const toHex = x => { const hex = Math.round(x * 255).toString(16); return hex.length === 1 ? '0' + hex : hex; };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
 // ===== CUSTOM CONFIRM DIALOG =====
 const ConfirmContext = React.createContext();
 
@@ -489,13 +530,39 @@ const formatEventDate = (dateString) => {
   }
 };
 
+const formatMessage = (text) => {
+  if (!text) return null;
+  const parts = text.split(/(\*\*.*?\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+        }
+        return (
+          <span key={i}>
+            {part.split('\n').map((line, j, arr) => (
+              <React.Fragment key={j}>
+                {line}
+                {j !== arr.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </span>
+        );
+      })}
+    </>
+  );
+};
+
 function AIChatModal({ isOpen, onClose, onEventReady }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const chatEndRef = useRef(null);
   const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
   const toast = useToast();
 
   useEffect(() => {
@@ -531,11 +598,12 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isProcessing) return;
+    if ((!input.trim() && !selectedImage) || isProcessing) return;
 
-    const newMessages = [...messages, { role: 'user', content: input.trim() }];
+    const newMessages = [...messages, { role: 'user', content: input.trim(), image: selectedImage }];
     setMessages(newMessages);
     setInput('');
+    setSelectedImage(null);
     setIsProcessing(true);
 
     try {
@@ -562,7 +630,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
       }
     } catch (err) {
       toast(err.message, 'error');
-      setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered an error. Please make sure GROQ_API_KEY is configured in the backend.' }]);
+      setMessages([...newMessages, { role: 'assistant', content: `Sorry, I encountered an error: ${err.message}` }]);
     } finally {
       setIsProcessing(false);
     }
@@ -599,7 +667,12 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
                       ? 'bg-black text-white rounded-br-sm shadow-md' 
                       : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm'
                   }`}>
-                    {m.content}
+                    {m.image && (
+                      <div className="mb-2">
+                        <img src={m.image} alt="Attachment" className="max-w-full rounded-sm object-contain" style={{ maxHeight: '150px' }} />
+                      </div>
+                    )}
+                    {m.content && <div>{formatMessage(m.content)}</div>}
                   </div>
                 </div>
               ))}
@@ -617,20 +690,56 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
           <div ref={chatEndRef} />
         </div>
 
-        <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100 flex gap-2 shrink-0">
+        {selectedImage && (
+          <div className="px-4 py-3 bg-slate-50 border-t border-gray-200 flex shrink-0">
+            <div className="relative inline-block">
+              <img src={selectedImage} alt="Preview" className="h-16 w-auto rounded border border-slate-300 shadow-sm" />
+              <button onClick={() => setSelectedImage(null)} type="button" className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-0.5 shadow hover:bg-rose-600 transition-colors">
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        <form onSubmit={handleSend} className="p-4 bg-white border-t border-gray-100 flex gap-2 shrink-0 items-center">
+          <input 
+            type="file"
+            accept="image/*"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onloadend = () => setSelectedImage(reader.result);
+                reader.readAsDataURL(file);
+              }
+              e.target.value = '';
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isProcessing}
+            className="p-2.5 text-slate-500 hover:bg-slate-100 rounded transition-colors disabled:opacity-50"
+            title="Attach Poster/Flyer"
+          >
+            <ImageIcon className="w-5 h-5" />
+          </button>
+          
           <input
             ref={inputRef}
             autoFocus
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            placeholder="Describe your event..."
+            placeholder={selectedImage ? "Add a message (optional)..." : "Describe your event..."}
             disabled={isProcessing}
             className="flex-1 bg-slate-100 border border-slate-200 rounded-none px-4 py-2.5 text-theme-text text-sm focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition-colors disabled:opacity-50"
           />
           <button
             type="submit"
-            disabled={isProcessing || !input.trim()}
+            disabled={isProcessing || (!input.trim() && !selectedImage)}
             className="px-4 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none font-serif font-normal transition-all shadow-md disabled:opacity-50 flex items-center justify-center shrink-0"
           >
             Send
@@ -774,6 +883,107 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   });
 
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  
+  const event = events?.find(e => e.id === viewingEventId);
+
+  const extractColorsFromCover = () => {
+    if (!event?.image) {
+      toast('No cover image available to extract colors from.', 'error');
+      return;
+    }
+    
+    toast('Extracting colors from cover image...', 'info');
+    
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let r = 0, g = 0, b = 0, count = 0;
+        
+        const step = Math.ceil(data.length / 4 / 1000) * 4; 
+        
+        for (let i = 0; i < data.length; i += step) {
+          r += data[i];
+          g += data[i + 1];
+          b += data[i + 2];
+          count++;
+        }
+        
+        r = Math.floor(r / count);
+        g = Math.floor(g / count);
+        b = Math.floor(b / count);
+        
+        const rgbToHex = (r, g, b) => '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+        
+        // Simple RGB to HSL
+        let rNorm = r/255, gNorm = g/255, bNorm = b/255;
+        let max = Math.max(rNorm, gNorm, bNorm), min = Math.min(rNorm, gNorm, bNorm);
+        let h, s, l = (max + min) / 2;
+        if(max === min){ h = s = 0; } else {
+          let d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          switch(max) {
+            case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
+            case gNorm: h = (bNorm - rNorm) / d + 2; break;
+            case bNorm: h = (rNorm - gNorm) / d + 4; break;
+          }
+          h /= 6;
+        }
+        
+        // Enhance saturation for a better accent color
+        s = Math.min(1, s + 0.3);
+        l = Math.min(0.8, Math.max(0.4, l));
+        
+        // HSL to RGB
+        let rOut, gOut, bOut;
+        if(s === 0){ rOut = gOut = bOut = l; } else {
+          const hue2rgb = (p, q, t) => {
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+          };
+          let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+          let p = 2 * l - q;
+          rOut = hue2rgb(p, q, h + 1/3);
+          gOut = hue2rgb(p, q, h);
+          bOut = hue2rgb(p, q, h - 1/3);
+        }
+        
+        const accentHex = rgbToHex(Math.round(rOut*255), Math.round(gOut*255), Math.round(bOut*255));
+        const isDark = l < 0.5;
+        
+        setPageConfig({
+          ...pageConfig,
+          primaryColor: accentHex,
+          bgColor: isDark ? '#020617' : '#f8fafc',
+          textColor: isDark ? '#ffffff' : '#0f172a',
+          cardBgColor: isDark ? 'rgba(15, 23, 42, 0.5)' : 'rgba(255, 255, 255, 0.8)',
+        });
+        
+        toast('Color scheme extracted successfully!', 'success');
+      } catch (err) {
+        console.error(err);
+        toast('Failed to extract colors. The image might have cross-origin restrictions.', 'error');
+      }
+    };
+    
+    img.onerror = () => {
+      toast('Failed to load image for color extraction.', 'error');
+    };
+    
+    img.src = event?.image;
+  };
+
 
   const handleAIEventReady = (eventData) => {
     const processedTiers = (eventData.tiers || [{ name: 'General Admission', price: 0, capacity: 100 }]).map(t => ({
@@ -1540,8 +1750,20 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
         {eventActiveTab === 'design' && (
           <form onSubmit={handlePageConfigSave} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl animate-in fade-in">
-            <h3 className="text-xl font-serif font-normal text-theme-text mb-4">Registration Page Design</h3>
-            <p className="text-theme-text/60 mb-6">Customize the look and feel of the public registration page for this event.</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <div>
+                <h3 className="text-xl font-serif font-normal text-theme-text mb-2">Registration Page Design</h3>
+                <p className="text-theme-text/60">Customize the look and feel of the public registration page for this event.</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={extractColorsFromCover}
+                className="px-4 py-2 bg-theme-primary/10 text-theme-primary hover:bg-theme-primary/20 rounded-md text-sm font-medium transition-colors flex items-center gap-2 border border-theme-primary/30"
+              >
+                <ImageIcon className="w-4 h-4" />
+                Extract Colors from Cover Image
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -1552,47 +1774,47 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Background Color (Dark)</label>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Background Color</label>
                 <div className="flex items-center space-x-3">
                   <input type="color" value={pageConfig.bgColor} onChange={(e) => setPageConfig({ ...pageConfig, bgColor: e.target.value })} className="h-10 w-10 rounded border border-gray-200 bg-white cursor-pointer" />
                   <input type="text" value={pageConfig.bgColor} onChange={(e) => setPageConfig({ ...pageConfig, bgColor: e.target.value })} className="flex-1 bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text font-mono uppercase" />
                 </div>
               </div>
+              <div>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Text Color</label>
+                <div className="flex items-center space-x-3">
+                  <input type="color" value={pageConfig.textColor || '#ffffff'} onChange={(e) => setPageConfig({ ...pageConfig, textColor: e.target.value })} className="h-10 w-10 rounded border border-gray-200 bg-white cursor-pointer" />
+                  <input type="text" value={pageConfig.textColor || '#ffffff'} onChange={(e) => setPageConfig({ ...pageConfig, textColor: e.target.value })} className="flex-1 bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text font-mono uppercase" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Card Background</label>
+                <div className="flex items-center space-x-3">
+                  <input type="text" value={pageConfig.cardBgColor || 'rgba(15, 23, 42, 0.5)'} onChange={(e) => setPageConfig({ ...pageConfig, cardBgColor: e.target.value })} className="flex-1 bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text font-mono" placeholder="e.g. rgba(15, 23, 42, 0.5)" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Button Radius</label>
+                <select value={pageConfig.buttonRadius || '0.75rem'} onChange={(e) => setPageConfig({ ...pageConfig, buttonRadius: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text focus:outline-none focus:border-black">
+                  <option value="0px">Square (0px)</option>
+                  <option value="0.375rem">Slight (6px)</option>
+                  <option value="0.75rem">Rounded (12px)</option>
+                  <option value="9999px">Pill</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Font Family</label>
+                <select value={pageConfig.fontFamily || 'Inter, sans-serif'} onChange={(e) => setPageConfig({ ...pageConfig, fontFamily: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text focus:outline-none focus:border-black">
+                  <option value="Inter, sans-serif">Inter (Sans-serif)</option>
+                  <option value="Outfit, sans-serif">Outfit (Modern)</option>
+                  <option value="'Playfair Display', serif">Playfair Display (Serif)</option>
+                  <option value="'JetBrains Mono', monospace">JetBrains Mono (Mono)</option>
+                </select>
+              </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Custom Background Image URL (Optional)</label>
                 <input type="text" value={pageConfig.bgImage || ''} onChange={(e) => setPageConfig({ ...pageConfig, bgImage: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="https://..." />
                 <p className="text-xs text-theme-text/50 mt-2">If provided, this image will be used as a blurred backdrop for the entire registration page.</p>
-              </div>
-
-              {/* Payment Configuration */}
-              <div className="md:col-span-2 pt-4 border-t border-gray-100">
-                <h4 className="text-lg font-serif font-normal text-theme-text mb-4">Payment Configuration</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">Currency</label>
-                    <select
-                      value={pageConfig.currency || 'INR'}
-                      onChange={(e) => setPageConfig({ ...pageConfig, currency: e.target.value })}
-                      className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text focus:outline-none focus:border-black"
-                    >
-                      <option value="INR">INR (₹)</option>
-                      <option value="USD">USD ($)</option>
-                      <option value="EUR">EUR (€)</option>
-                      <option value="GBP">GBP (£)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">UPI ID for Payments (Optional)</label>
-                    <input
-                      type="text"
-                      value={pageConfig.upiId || ''}
-                      onChange={(e) => setPageConfig({ ...pageConfig, upiId: e.target.value })}
-                      className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text"
-                      placeholder="e.g. yourname@upi"
-                    />
-                    <p className="text-xs text-theme-text/50 mt-1">If provided, users will see a UPI QR code to pay for tickets.</p>
-                  </div>
-                </div>
               </div>
 
               <div className="md:col-span-2 pt-4">
@@ -1606,8 +1828,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             <div className="mt-8 p-4 bg-white rounded-none border border-gray-200 relative overflow-hidden">
               <div className="absolute inset-0 opacity-20 bg-cover bg-center" style={{ backgroundImage: pageConfig.bgImage ? `url("${pageConfig.bgImage}")` : 'none', backgroundColor: pageConfig.bgColor }} />
               <div className="relative z-10 p-6 flex flex-col items-center justify-center space-y-4">
-                <h4 className="text-theme-text font-serif font-normal">Live Preview</h4>
-                <button type="button" style={{ backgroundColor: pageConfig.primaryColor }} className="px-6 py-2 rounded-none text-theme-text font-serif font-normal shadow-lg">Checkout Button</button>
+                <h4 className="font-serif font-normal" style={{ color: pageConfig.textColor || '#000000', fontFamily: pageConfig.fontFamily || 'Inter, sans-serif' }}>Live Preview</h4>
+                <button type="button" style={{ backgroundColor: pageConfig.primaryColor, color: pageConfig.textColor || '#ffffff', borderRadius: pageConfig.buttonRadius || '0.75rem', fontFamily: pageConfig.fontFamily || 'Inter, sans-serif' }} className="px-6 py-2 shadow-lg">Checkout Button</button>
               </div>
             </div>
 
