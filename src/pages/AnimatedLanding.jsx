@@ -1,13 +1,9 @@
 import React, { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
 
 export default function AnimatedLanding() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
-
-  const { scrollYProgress } = useScroll();
-  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.2]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -56,8 +52,7 @@ export default function AnimatedLanding() {
     <div className="relative w-full bg-white selection:bg-black/10">
       
       {/* Background Video Layer - FIXED so it stays behind content while scrolling */}
-      <motion.div 
-        style={{ scale: videoScale }}
+      <div 
         className="fixed inset-0 z-0 pointer-events-none origin-bottom flex items-end" 
       >
         <div className="relative w-full" style={{ height: 'calc(100vh - 300px)' }}>
@@ -71,7 +66,7 @@ export default function AnimatedLanding() {
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-white via-transparent to-white" />
         </div>
-      </motion.div>
+      </div>
 
       {/* Navigation Bar */}
       <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
@@ -102,16 +97,12 @@ export default function AnimatedLanding() {
           Building platforms for visionary organizers, vibrant campuses, and thoughtful creators. Through the noise, we craft elegant ticketing experiences and seamless event management.
         </p>
 
-        <motion.button 
-          initial={{ opacity: 0, y: 50, scale: 0.8 }}
-          whileInView={{ opacity: 1, y: 0, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 1.2, ease: "backOut" }}
+        <button 
           onClick={() => navigate('/admin')}
           className="bg-black text-white font-sans rounded-full px-14 py-5 text-base mt-12 hover:scale-[1.03] transition-transform duration-300 shadow-xl shadow-black/10"
         >
           Create Event
-        </motion.button>
+        </button>
       </main>
 
       {/* Blank Spacer to scroll past video smoothly */}
@@ -130,18 +121,14 @@ export default function AnimatedLanding() {
               { title: "AI Event Co-Pilot", desc: "Let our intelligent assistant draft your event details, schedule, and branding in seconds, not hours." },
               { title: "Dynamic Access Control", desc: "Real-time scanning and attendance tracking with a smooth, latency-free verification system at the gates." }
             ].map((feature, i) => (
-              <motion.div 
+              <div 
                 key={i} 
-                initial={{ opacity: 0, y: 100, rotate: -5, scale: 0.9 }}
-                whileInView={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.8, delay: i * 0.2, ease: "easeOut" }}
                 className="flex flex-col items-center text-center p-8 border border-gray-100 hover:shadow-2xl transition-shadow duration-500 rounded-3xl bg-white"
               >
                 <div className="w-12 h-12 bg-black rounded-full mb-6 flex items-center justify-center text-white text-xl font-serif">{i + 1}</div>
                 <h3 className="text-2xl font-serif text-black mb-4">{feature.title}</h3>
                 <p className="text-[#6F6F6F] font-sans leading-relaxed">{feature.desc}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>
@@ -158,30 +145,22 @@ export default function AnimatedLanding() {
           </p>
           
           <div className="grid md:grid-cols-2 gap-8">
-            <motion.div 
-              initial={{ opacity: 0, x: -100, rotate: -10 }}
-              whileInView={{ opacity: 1, x: 0, rotate: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, ease: "easeOut" }}
+            <div 
               className="aspect-[4/3] bg-gray-200 rounded-3xl overflow-hidden relative group"
             >
               <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale hover:grayscale-0" alt="Tech Conference" />
               <div className="absolute inset-0 bg-black/40 flex items-end p-8">
                 <h3 className="text-white text-3xl font-serif">Global Tech Summit '26</h3>
               </div>
-            </motion.div>
-            <motion.div 
-              initial={{ opacity: 0, x: 100, rotate: 10 }}
-              whileInView={{ opacity: 1, x: 0, rotate: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+            </div>
+            <div 
               className="aspect-[4/3] bg-gray-200 rounded-3xl overflow-hidden relative group"
             >
               <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale hover:grayscale-0" alt="Music Festival" />
               <div className="absolute inset-0 bg-black/40 flex items-end p-8">
                 <h3 className="text-white text-3xl font-serif">Aurora Music Festival</h3>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
       </section>
@@ -195,16 +174,12 @@ export default function AnimatedLanding() {
           <p className="text-gray-400 font-sans mb-12 text-lg">
             Join the hundreds of organizers redefining what an event should feel like.
           </p>
-          <motion.button 
-            initial={{ opacity: 0, scale: 0 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.8, ease: "backOut" }}
+          <button 
             onClick={() => navigate('/admin')}
             className="bg-white text-black font-sans rounded-full px-12 py-4 text-base hover:scale-[1.03] transition-transform duration-300"
           >
             Start Building
-          </motion.button>
+          </button>
         </div>
         <div className="mt-32 pt-8 border-t border-gray-800 text-gray-500 text-sm font-sans flex justify-between max-w-7xl mx-auto">
           <span>© 2026 EventSphere. All rights reserved.</span>

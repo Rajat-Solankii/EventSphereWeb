@@ -74,29 +74,29 @@ function createTransporterFromConfig(smtpConfig) {
 
 function buildConfirmationEmail(attendee) {
   return `
-    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#f8fcfd;border-radius:16px;overflow:hidden;border:1px solid rgba(79,178,192,0.2);">
-      <div style="background:linear-gradient(90deg,#4fb2c0,#97a1da);padding:32px 40px;">
-        <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">You're In! 🎉</h1>
-        <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px;">${attendee.eventTitle}</p>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+      <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+        <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">You're In!</h1>
+        <p style="margin:8px 0 0;color:#666666;font-size:15px;">${attendee.eventTitle}</p>
       </div>
-      <div style="padding:32px 40px;">
-        <p style="color:#081317;font-size:16px;margin:0 0 24px;">Hi <strong style="color:#4fb2c0;">${attendee.name}</strong>,</p>
-        <p style="color:#081317;font-size:15px;margin:0 0 24px;">Your <strong style="color:#4fb2c0;">${attendee.tierName}</strong> pass is confirmed.</p>
-        <div style="background:rgba(79,178,192,0.05);border:1px solid rgba(79,178,192,0.15);border-radius:12px;padding:24px;margin:24px 0;">
+      <div style="padding:40px;">
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${attendee.name}</strong>,</p>
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Your <strong>${attendee.tierName}</strong> pass is confirmed.</p>
+        <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:24px;margin:24px 0;">
           <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:8px 0;color:#081317;opacity:0.7;font-size:14px;width:40%;">Event</td><td style="padding:8px 0;color:#081317;font-size:14px;font-weight:600;">${attendee.eventTitle}</td></tr>
-            <tr><td style="padding:8px 0;color:#081317;opacity:0.7;font-size:14px;">Date</td><td style="padding:8px 0;color:#081317;font-size:14px;font-weight:600;">${attendee.eventDate || 'See event details'}</td></tr>
-            <tr><td style="padding:8px 0;color:#081317;opacity:0.7;font-size:14px;">Venue</td><td style="padding:8px 0;color:#081317;font-size:14px;font-weight:600;">${attendee.eventVenue || 'See event details'}</td></tr>
-            <tr><td style="padding:8px 0;color:#081317;opacity:0.7;font-size:14px;">Tier</td><td style="padding:8px 0;color:#081317;font-size:14px;font-weight:600;">${attendee.tierName}</td></tr>
-            <tr style="border-top:1px solid rgba(79,178,192,0.15);">
-              <td style="padding:12px 0 0;color:#081317;opacity:0.7;font-size:14px;">Pass ID</td>
-              <td style="padding:12px 0 0;"><span style="font-family:'Courier New',monospace;background:rgba(79,178,192,0.1);color:#4fb2c0;padding:4px 10px;border-radius:6px;font-size:14px;border:1px solid rgba(79,178,192,0.2);">${attendee.passId}</span></td>
+            <tr><td style="padding:8px 0;color:#666666;font-size:14px;width:40%;">Event</td><td style="padding:8px 0;color:#111111;font-size:14px;font-weight:600;">${attendee.eventTitle}</td></tr>
+            <tr><td style="padding:8px 0;color:#666666;font-size:14px;">Date</td><td style="padding:8px 0;color:#111111;font-size:14px;font-weight:600;">${attendee.eventDate || 'See event details'}</td></tr>
+            <tr><td style="padding:8px 0;color:#666666;font-size:14px;">Venue</td><td style="padding:8px 0;color:#111111;font-size:14px;font-weight:600;">${attendee.eventVenue || 'See event details'}</td></tr>
+            <tr><td style="padding:8px 0;color:#666666;font-size:14px;">Tier</td><td style="padding:8px 0;color:#111111;font-size:14px;font-weight:600;">${attendee.tierName}</td></tr>
+            <tr style="border-top:1px solid #e5e5e5;">
+              <td style="padding:16px 0 0;color:#666666;font-size:14px;">Pass ID</td>
+              <td style="padding:16px 0 0;"><span style="font-family:monospace;background:#ffffff;color:#000000;padding:4px 10px;border-radius:4px;font-size:14px;border:1px solid #e5e5e5;">${attendee.passId}</span></td>
             </tr>
           </table>
         </div>
       </div>
-      <div style="padding:20px 40px;border-top:1px solid rgba(79,178,192,0.1);">
-        <p style="margin:0;color:#081317;font-size:12px;text-align:center;opacity:0.5;">Powered by EventSphere</p>
+      <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+        <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere</p>
       </div>
     </div>
   `;
@@ -104,23 +104,23 @@ function buildConfirmationEmail(attendee) {
 
 function buildDeclinedEmail(attendee) {
   return `
-    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#f8fcfd;border-radius:16px;overflow:hidden;border:1px solid rgba(225,29,72,0.2);">
-      <div style="background:linear-gradient(90deg,#e11d48,#f43f5e);padding:32px 40px;">
-        <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">Request Declined</h1>
-        <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px;">${attendee.eventTitle}</p>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+      <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+        <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Request Declined</h1>
+        <p style="margin:8px 0 0;color:#666666;font-size:15px;">${attendee.eventTitle}</p>
       </div>
-      <div style="padding:32px 40px;">
-        <p style="color:#081317;font-size:16px;margin:0 0 24px;">Hi <strong style="color:#e11d48;">${attendee.name}</strong>,</p>
-        <p style="color:#081317;font-size:15px;margin:0 0 24px;">Unfortunately, your request for a <strong style="color:#e11d48;">${attendee.tierName}</strong> pass has been declined by the organizers.</p>
-        <div style="background:rgba(225,29,72,0.05);border:1px solid rgba(225,29,72,0.15);border-radius:12px;padding:24px;margin:24px 0;">
-          <p style="margin:0;color:#081317;font-size:14px;line-height:1.6;">
+      <div style="padding:40px;">
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${attendee.name}</strong>,</p>
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Unfortunately, your request for a <strong>${attendee.tierName}</strong> pass has been declined by the organizers.</p>
+        <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:24px;margin:24px 0;">
+          <p style="margin:0;color:#111111;font-size:14px;line-height:1.6;">
             <strong>Payment Refund:</strong> Any processed payment for this ticket will take some time to revert back to your bank account. Depending on your bank, this usually takes between 3 to 7 business days.
           </p>
         </div>
-        <p style="color:#081317;font-size:14px;opacity:0.8;margin-top:24px;">If you have any questions, please contact the event organizer directly.</p>
+        <p style="color:#666666;font-size:14px;margin-top:24px;">If you have any questions, please contact the event organizer directly.</p>
       </div>
-      <div style="padding:20px 40px;border-top:1px solid rgba(225,29,72,0.1);">
-        <p style="margin:0;color:#081317;font-size:12px;text-align:center;opacity:0.5;">Powered by EventSphere</p>
+      <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+        <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere</p>
       </div>
     </div>
   `;
@@ -129,22 +129,22 @@ function buildDeclinedEmail(attendee) {
 
 function buildPendingEmail(attendee) {
   return `
-    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#f8fcfd;border-radius:16px;overflow:hidden;border:1px solid rgba(245,158,11,0.2);">
-      <div style="background:linear-gradient(90deg,#f59e0b,#fbbf24);padding:32px 40px;">
-        <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">Transaction Review Pending</h1>
-        <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px;">${attendee.eventTitle}</p>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+      <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+        <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Transaction Review Pending</h1>
+        <p style="margin:8px 0 0;color:#666666;font-size:15px;">${attendee.eventTitle}</p>
       </div>
-      <div style="padding:32px 40px;">
-        <p style="color:#081317;font-size:16px;margin:0 0 24px;">Hi <strong style="color:#f59e0b;">${attendee.name}</strong>,</p>
-        <p style="color:#081317;font-size:15px;margin:0 0 24px;">Your payment for a <strong style="color:#f59e0b;">${attendee.tierName}</strong> pass is currently under review by the organizers.</p>
-        <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:24px;margin:24px 0;">
-          <p style="margin:0;color:#081317;font-size:14px;line-height:1.6;">
+      <div style="padding:40px;">
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${attendee.name}</strong>,</p>
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Your payment for a <strong>${attendee.tierName}</strong> pass is currently under review by the organizers.</p>
+        <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:24px;margin:24px 0;">
+          <p style="margin:0;color:#111111;font-size:14px;line-height:1.6;">
             <strong>What happens next?</strong> The event organizers will manually review your uploaded payment screenshot. You will receive another email once your pass is approved.
           </p>
         </div>
       </div>
-      <div style="padding:20px 40px;border-top:1px solid rgba(245,158,11,0.1);">
-        <p style="margin:0;color:#081317;font-size:12px;text-align:center;opacity:0.5;">Powered by EventSphere</p>
+      <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+        <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere</p>
       </div>
     </div>
   `;
@@ -152,22 +152,22 @@ function buildPendingEmail(attendee) {
 
 function buildDeclineEmail(attendee) {
   return `
-    <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#fef2f2;border-radius:16px;overflow:hidden;border:1px solid rgba(239,68,68,0.2);">
-      <div style="background:linear-gradient(90deg,#ef4444,#f87171);padding:32px 40px;">
-        <h1 style="margin:0;color:#ffffff;font-size:28px;font-weight:800;">Action Required: Payment Issue</h1>
-        <p style="margin:8px 0 0;color:rgba(255,255,255,0.85);font-size:16px;">${attendee.eventTitle}</p>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+      <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+        <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Action Required: Payment Issue</h1>
+        <p style="margin:8px 0 0;color:#666666;font-size:15px;">${attendee.eventTitle}</p>
       </div>
-      <div style="padding:32px 40px;">
-        <p style="color:#081317;font-size:16px;margin:0 0 24px;">Hi <strong style="color:#ef4444;">${attendee.name}</strong>,</p>
-        <p style="color:#081317;font-size:15px;margin:0 0 24px;">There was an issue verifying the payment screenshot for your <strong style="color:#ef4444;">${attendee.tierName}</strong> pass. It may have been unclear or incorrect.</p>
-        <div style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-radius:12px;padding:24px;margin:24px 0;">
-          <p style="margin:0;color:#081317;font-size:14px;line-height:1.6;">
+      <div style="padding:40px;">
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${attendee.name}</strong>,</p>
+        <p style="color:#111111;font-size:15px;margin:0 0 24px;">There was an issue verifying the payment screenshot for your <strong>${attendee.tierName}</strong> pass. It may have been unclear or incorrect.</p>
+        <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:24px;margin:24px 0;">
+          <p style="margin:0;color:#111111;font-size:14px;line-height:1.6;">
             <strong>Your ticket has been put on HOLD.</strong> Please reply directly to this email with a valid, clear payment screenshot before tickets run out. If we don't receive a valid payment screenshot, your registration will not be considered.
           </p>
         </div>
       </div>
-      <div style="padding:20px 40px;border-top:1px solid rgba(239,68,68,0.1);">
-        <p style="margin:0;color:#081317;font-size:12px;text-align:center;opacity:0.5;">Powered by EventSphere</p>
+      <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+        <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere</p>
       </div>
     </div>
   `;
@@ -198,6 +198,20 @@ app.post('/api/v1/tickets/book', async (req, res) => {
   if (!attendee?.email) return res.status(400).json({ success: false, message: 'Attendee email required.' });
 
   try {
+    const eventData = await prisma.event.findUnique({
+      where: { id: attendee.eventId },
+      select: { date_time: true, smtp_config: true, title: true }
+    });
+    
+    if (!eventData) {
+      return res.status(404).json({ success: false, message: 'Event not found.' });
+    }
+    
+    const isEventPast = new Date(eventData.date_time).getTime() < new Date().setHours(0, 0, 0, 0);
+    if (isEventPast) {
+      return res.status(400).json({ success: false, message: 'Registrations are closed for this past event.' });
+    }
+
     const dbTicket = await prisma.ticket.create({
       data: {
         event_id: attendee.eventId,
@@ -217,10 +231,6 @@ app.post('/api/v1/tickets/book', async (req, res) => {
     let messageId = null, emailError = null;
 
     try {
-      const eventData = await prisma.event.findUnique({
-        where: { id: attendee.eventId },
-        select: { smtp_config: true, title: true }
-      });
       let smtpConfig = eventData?.smtp_config ? JSON.parse(eventData.smtp_config) : null;
       let fromAddress = smtpConfig?.fromEmail || (smtpConfig?.user ? `"${eventData.title}" <${smtpConfig.user}>` : process.env.SMTP_FROM || `"EventSphere" <noreply@eventsphere.com>`);
 
@@ -491,7 +501,7 @@ app.post('/api/v1/events/:id/email-all', verifyToken, requireEventAccess, upload
     })) : [];
 
     const event = await prisma.event.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id: req.params.id },
       include: { tickets: { where: { attendee_email: { not: null } } } }
     });
     if (!event) return res.status(404).json({ success: false, message: 'Event not found.' });

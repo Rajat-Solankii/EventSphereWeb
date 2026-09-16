@@ -143,9 +143,9 @@ function ConfirmProvider({ children }) {
               >Cancel</button>
               <button
                 onClick={() => handleClose(true)}
-                className={`px-5 py-2.5 rounded-none text-theme-text text-sm font-sans font-medium transition-colors shadow-lg ${state.confirmColor === 'rose'
+                className={`px-5 py-2.5 rounded-none text-white text-sm font-sans font-medium transition-colors shadow-lg ${state.confirmColor === 'rose'
                     ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-500/20'
-                    : 'bg-black hover:bg-black shadow-black/5'
+                    : 'bg-black hover:bg-gray-800 shadow-black/5'
                   }`}
               >{state.confirmLabel}</button>
             </div>
@@ -539,6 +539,13 @@ function TransactionsView({ events, allAttendees }) {
 
 function LiveDashboardView({ events, allAttendees }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || null);
+
+  useEffect(() => {
+    if (events.length > 0 && !selectedEventId) {
+      setSelectedEventId(events[0].id);
+    }
+  }, [events, selectedEventId]);
+
   const activeEvent = events.find(e => String(e.id) === String(selectedEventId)) || events[0];
 
   if (!activeEvent || events.length === 0) {
@@ -1823,7 +1830,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     type="text"
                     placeholder="Email subject..."
                     value={broadcastSubject}
-                    onChange={e => setBroadcastSubject(e.target.value)}
+                    onChange={e => {
+                      setBroadcastSubject(e.target.value);
+                      e.target.setCustomValidity('');
+                    }}
+                    onInvalid={e => e.target.setCustomValidity('Please provide a subject for the email.')}
                     required
                     className="w-full bg-white/60 border border-gray-200 rounded-sm px-4 py-2.5 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-theme-secondary transition-colors"
                   />
@@ -1883,10 +1894,10 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     <button
                       type="submit"
                       disabled={broadcastState === 'loading' || eventAttendees.length === 0}
-                      className="px-5 py-2 bg-theme-secondary hover:bg-theme-secondary text-theme-text rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
+                      className="px-5 py-2 bg-black hover:bg-gray-800 text-white rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
                     >
                       {broadcastState === 'loading' ? (
-                        <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-none animate-spin inline-block" /> Sending...</>
+                        <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Sending...</>
                       ) : (
                         <>📣 Send to All ({eventAttendees.length})</>
                       )}
@@ -2510,6 +2521,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {events.map(event => {
           const stats = getEventStats(event);
+          const pageConfig = event.page_config ? (typeof event.page_config === 'string' ? JSON.parse(event.page_config) : event.page_config) : {};
+          const currencySymbol = pageConfig.currency === 'USD' ? '$' : pageConfig.currency === 'EUR' ? '€' : pageConfig.currency === 'GBP' ? '£' : '₹';
           return (
             <div key={event.id} onClick={(e) => { if (e.target.tagName !== 'BUTTON') setViewingEventId(event.id); }} className="glass-panel rounded-none border border-gray-200 overflow-hidden flex flex-col relative group cursor-pointer hover:border-black/50 transition-colors">
               <div className="h-32 bg-white relative">
@@ -2526,7 +2539,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 </div>
                 <div className="mt-auto pt-4 border-t border-stone-800 flex justify-between items-center text-sm">
                   <div className="text-theme-text/80"><span className="font-serif font-normal text-theme-text">{stats.totalAvail}</span> / {stats.totalCap} left</div>
-                  <div className="font-serif font-normal text-black">{stats.minPrice === 0 ? "Free" : `From $${stats.minPrice.toFixed(2)}`}</div>
+                  <div className="font-serif font-normal text-black">{stats.minPrice === 0 ? "Free" : `From ${currencySymbol}${stats.minPrice.toFixed(2)}`}</div>
                 </div>
               </div>
             </div>

@@ -62,25 +62,25 @@ async function sendVerificationEmail(user, token) {
     to: user.email,
     subject: '✉️ Verify Your EventSphere Account',
     html: `
-      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:580px;margin:0 auto;background:#f8fcfd;border-radius:16px;overflow:hidden;border:1px solid rgba(79,178,192,0.2);">
-        <div style="background:linear-gradient(90deg,#4fb2c0,#97a1da);padding:32px 40px;">
-          <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Verify Your Email 📧</h1>
-          <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:15px;">One more step to activate your EventSphere account</p>
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+        <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+          <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Verify Your Email</h1>
+          <p style="margin:8px 0 0;color:#666666;font-size:15px;">One more step to activate your EventSphere account.</p>
         </div>
-        <div style="padding:36px 40px;">
-          <p style="color:#081317;font-size:15px;margin:0 0 24px;">Hi <strong style="color:#4fb2c0;">${user.name}</strong>,</p>
-          <p style="color:#081317;font-size:15px;margin:0 0 28px;opacity:0.8;">You've been invited to join EventSphere. Click the button below to verify your email address and activate your account.</p>
-          <div style="text-align:center;margin:32px 0;">
-            <a href="${verifyUrl}" style="display:inline-block;background:linear-gradient(90deg,#4fb2c0,#97a1da);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;letter-spacing:0.3px;">Verify My Email Address →</a>
+        <div style="padding:40px;">
+          <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${user.name}</strong>,</p>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">You've been invited to join EventSphere. Click the button below to verify your email address and activate your account.</p>
+          <div style="margin:32px 0;">
+            <a href="${verifyUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:12px 28px;border-radius:4px;">Verify My Email Address</a>
           </div>
-          <div style="background:rgba(79,178,192,0.1);border:1px solid rgba(79,178,192,0.2);border-radius:10px;padding:16px 20px;margin-top:8px;">
-            <p style="margin:0;color:#081317;font-size:13px;opacity:0.7;">Or paste this link into your browser:</p>
-            <p style="margin:6px 0 0;font-family:'Courier New',monospace;color:#7172cc;font-size:12px;word-break:break-all;">${verifyUrl}</p>
+          <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;padding:16px;margin-top:24px;">
+            <p style="margin:0;color:#666666;font-size:13px;">Or paste this link into your browser:</p>
+            <p style="margin:8px 0 0;font-family:monospace;color:#000000;font-size:12px;word-break:break-all;">${verifyUrl}</p>
           </div>
-          <p style="color:#081317;font-size:13px;margin:24px 0 0;opacity:0.6;">⏰ This link expires in <strong>24 hours</strong>. If you didn't request this, you can safely ignore this email.</p>
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">This link expires in <strong>24 hours</strong>. If you didn't request this, you can safely ignore this email.</p>
         </div>
-        <div style="padding:18px 40px;border-top:1px solid rgba(79,178,192,0.1);">
-          <p style="margin:0;color:#081317;font-size:12px;text-align:center;opacity:0.5;">Powered by EventSphere · This is an automated message</p>
+        <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+          <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
         </div>
       </div>
     `
@@ -99,22 +99,25 @@ async function sendPasswordResetEmail(user, token) {
     to: user.email,
     subject: '🔒 Reset Your EventSphere Password',
     html: `
-      <div style="font-family:'Segoe UI',Arial,sans-serif;max-width:580px;margin:0 auto;background:#f8fcfd;border-radius:16px;overflow:hidden;border:1px solid rgba(79,178,192,0.2);">
-        <div style="background:linear-gradient(90deg,#4fb2c0,#7172cc);padding:32px 40px;">
-          <h1 style="margin:0;color:#fff;font-size:26px;font-weight:800;letter-spacing:-0.5px;">Password Reset 🔑</h1>
-          <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:15px;">We received a request to reset your password.</p>
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+        <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+          <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Password Reset</h1>
+          <p style="margin:8px 0 0;color:#666666;font-size:15px;">We received a request to reset your password.</p>
         </div>
-        <div style="padding:36px 40px;">
-          <p style="color:#081317;font-size:15px;margin:0 0 24px;">Hi <strong style="color:#4fb2c0;">${user.name}</strong>,</p>
-          <p style="color:#081317;font-size:15px;margin:0 0 28px;opacity:0.8;">Click the button below to choose a new password. If you didn't request this, you can safely ignore this email.</p>
-          <div style="text-align:center;margin:32px 0;">
-            <a href="${resetUrl}" style="display:inline-block;background:linear-gradient(90deg,#4fb2c0,#7172cc);color:#fff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;letter-spacing:0.3px;">Reset My Password →</a>
+        <div style="padding:40px;">
+          <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${user.name}</strong>,</p>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">Click the button below to choose a new password. If you didn't request this, you can safely ignore this email.</p>
+          <div style="margin:32px 0;">
+            <a href="${resetUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:12px 28px;border-radius:4px;">Reset My Password</a>
           </div>
-          <div style="background:rgba(79,178,192,0.1);border:1px solid rgba(79,178,192,0.2);border-radius:10px;padding:16px 20px;margin-top:8px;">
-            <p style="margin:0;color:#081317;font-size:13px;opacity:0.7;">Or paste this link into your browser:</p>
-            <p style="margin:6px 0 0;font-family:'Courier New',monospace;color:#7172cc;font-size:12px;word-break:break-all;">${resetUrl}</p>
+          <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;padding:16px;margin-top:24px;">
+            <p style="margin:0;color:#666666;font-size:13px;">Or paste this link into your browser:</p>
+            <p style="margin:8px 0 0;font-family:monospace;color:#000000;font-size:12px;word-break:break-all;">${resetUrl}</p>
           </div>
-          <p style="color:#081317;font-size:13px;margin:24px 0 0;opacity:0.6;">⏰ This link expires in <strong>1 hour</strong>.</p>
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">This link expires in <strong>1 hour</strong>.</p>
+        </div>
+        <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+          <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
         </div>
       </div>
     `
@@ -235,7 +238,8 @@ router.post('/login', authLimiter, async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
-        organization_id: user.organization_id
+        organization_id: user.organization_id,
+        profile_image: user.profile_image
       }
     });
   } catch (err) {
@@ -290,7 +294,8 @@ router.post('/refresh', async (req, res) => {
         name: session.user.name,
         email: session.user.email,
         role: session.user.role,
-        organization_id: session.user.organization_id
+        organization_id: session.user.organization_id,
+        profile_image: session.user.profile_image
       }
     });
   } catch (err) {
@@ -372,24 +377,24 @@ router.post('/profile/send-otp', verifyToken, emailLimiter, async (req, res) => 
         to: targetEmail,
         subject: subjectLine,
         html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #f8fafc;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h2 style="color: #4fb2c0; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">EventSphere</h2>
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+          <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;text-align:center;">
+            <h2 style="color:#000000;margin:0;font-size:24px;font-weight:600;letter-spacing:-0.5px;">EventSphere</h2>
           </div>
-          <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); text-align: center; border: 1px solid #e2e8f0;">
-            <h3 style="color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 700;">Verification Code</h3>
-            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 32px;">
+          <div style="padding:40px;text-align:center;">
+            <h3 style="color:#111111;margin-top:0;font-size:20px;font-weight:600;">Verification Code</h3>
+            <p style="color:#666666;font-size:15px;line-height:1.5;margin-bottom:32px;">
               Use this one-time code to ${purposeText}:
             </p>
-            <div style="background-color: #f1f5f9; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 2px dashed #cbd5e1;">
-              <h1 style="color: #0f172a; margin: 0; font-size: 46px; letter-spacing: 12px; font-weight: 800; padding-left: 12px;">${otp}</h1>
+            <div style="background:#fafafa;border-radius:8px;padding:24px;margin-bottom:32px;border:1px solid #e5e5e5;">
+              <h1 style="color:#000000;margin:0;font-size:42px;letter-spacing:12px;font-weight:700;padding-left:12px;font-family:monospace;">${otp}</h1>
             </div>
-            <p style="color: #64748b; font-size: 14px; margin: 0;">
+            <p style="color:#666666;font-size:13px;margin:0;">
               This code will expire in <strong>10 minutes</strong>.<br>If you didn't request this, please ignore this email.
             </p>
           </div>
-          <div style="text-align: center; margin-top: 30px;">
-            <p style="color: #94a3b8; font-size: 13px;">&copy; ${new Date().getFullYear()} EventSphere. All rights reserved.</p>
+          <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+            <p style="margin:0;color:#999999;font-size:12px;text-align:center;">&copy; ${new Date().getFullYear()} EventSphere. All rights reserved.</p>
           </div>
         </div>
         `

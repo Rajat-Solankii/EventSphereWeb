@@ -69,24 +69,24 @@ router.post('/users/send-otp', verifyToken, requireRole('ORG_ADMIN'), async (req
         to: email,
         subject: 'EventSphere - Staff Verification Code',
         html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #f8fafc;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h2 style="color: #6366f1; margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">EventSphere</h2>
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+          <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;text-align:center;">
+            <h2 style="color:#000000;margin:0;font-size:24px;font-weight:600;letter-spacing:-0.5px;">EventSphere</h2>
           </div>
-          <div style="background-color: #ffffff; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01); text-align: center; border: 1px solid #e2e8f0;">
-            <h3 style="color: #0f172a; margin-top: 0; font-size: 22px; font-weight: 700;">Verify Your Email</h3>
-            <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 32px;">
+          <div style="padding:40px;text-align:center;">
+            <h3 style="color:#111111;margin-top:0;font-size:20px;font-weight:600;">Verify Your Email</h3>
+            <p style="color:#666666;font-size:15px;line-height:1.6;margin-bottom:32px;">
               You're almost there! We need to verify this email address to set up your staff account on EventSphere. Use the one-time password (OTP) below:
             </p>
-            <div style="background-color: #f1f5f9; border-radius: 12px; padding: 24px; margin-bottom: 32px; border: 2px dashed #cbd5e1;">
-              <h1 style="color: #0f172a; margin: 0; font-size: 46px; letter-spacing: 12px; font-weight: 800; padding-left: 12px;">${otp}</h1>
+            <div style="background:#fafafa;border-radius:8px;padding:24px;margin-bottom:32px;border:1px solid #e5e5e5;">
+              <h1 style="color:#000000;margin:0;font-size:42px;letter-spacing:12px;font-weight:700;padding-left:12px;font-family:monospace;">${otp}</h1>
             </div>
-            <p style="color: #64748b; font-size: 14px; margin: 0;">
+            <p style="color:#666666;font-size:13px;margin:0;">
               This code will expire in <strong>10 minutes</strong>.<br>If you didn't request this, please safely ignore this email.
             </p>
           </div>
-          <div style="text-align: center; margin-top: 30px;">
-            <p style="color: #94a3b8; font-size: 13px;">&copy; ${new Date().getFullYear()} EventSphere. All rights reserved.</p>
+          <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+            <p style="margin:0;color:#999999;font-size:12px;text-align:center;">&copy; ${new Date().getFullYear()} EventSphere. All rights reserved.</p>
           </div>
         </div>
         `

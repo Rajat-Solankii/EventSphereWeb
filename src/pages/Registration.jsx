@@ -231,6 +231,8 @@ export default function Registration() {
     fetchEvent();
   }, [eventId]);
 
+  const isEventPast = targetEvent?.date_time ? new Date(targetEvent.date_time).getTime() < new Date().setHours(0, 0, 0, 0) : false;
+
   const [selectedTier, setSelectedTier] = useState(null);
   const [bookingState, setBookingState] = useState('idle'); // idle, otp_verification, payment, loading, success
   const [attendeeName, setAttendeeName] = useState('');
@@ -372,8 +374,17 @@ export default function Registration() {
     }
   };
 
-  const pageConfig = targetEvent?.page_config ? (typeof targetEvent.page_config === 'string' ? JSON.parse(targetEvent.page_config) : targetEvent.page_config) : { primaryColor: '#10b981', bgColor: '#020617', bgImage: '', showSocials: true, currency: 'INR' };
-  const currencySymbol = pageConfig?.currency === 'USD' ? '$' : pageConfig?.currency === 'EUR' ? '€' : pageConfig?.currency === 'GBP' ? '£' : '₹';
+  const storedConfig = targetEvent?.page_config ? (typeof targetEvent.page_config === 'string' ? JSON.parse(targetEvent.page_config) : targetEvent.page_config) : {};
+  const pageConfig = { 
+    primaryColor: storedConfig.primaryColor || '#000000', 
+    bgColor: '#f9fafb', 
+    textColor: '#111827', 
+    cardBgColor: '#ffffff', 
+    bgImage: storedConfig.bgImage || '', 
+    showSocials: storedConfig.showSocials !== false, 
+    currency: storedConfig.currency || 'INR' 
+  };
+  const currencySymbol = pageConfig.currency === 'USD' ? '$' : pageConfig.currency === 'EUR' ? '€' : pageConfig.currency === 'GBP' ? '£' : '₹';
   const upiConfig = targetEvent?.upi_config ? (typeof targetEvent.upi_config === 'string' ? JSON.parse(targetEvent.upi_config) : targetEvent.upi_config) : null;
 
   return (
@@ -381,15 +392,15 @@ export default function Registration() {
       <style>{`
         :root {
           --theme-primary: ${pageConfig.primaryColor};
-          --theme-text: ${pageConfig.textColor || '#ffffff'};
-          --theme-card-bg: ${pageConfig.cardBgColor || 'rgba(30, 41, 59, 0.4)'};
-          --theme-radius: ${pageConfig.buttonRadius || '0.75rem'};
+          --theme-text: ${pageConfig.textColor || '#0f172a'};
+          --theme-card-bg: ${pageConfig.cardBgColor || 'rgba(255, 255, 255, 0.7)'};
+          --theme-radius: ${pageConfig.buttonRadius || '0'};
         }
         .theme-btn {
           background-color: var(--theme-primary) !important;
           border-radius: var(--theme-radius) !important;
-          color: var(--theme-text) !important;
-          box-shadow: 0 0 20px color-mix(in srgb, var(--theme-primary) 40%, transparent);
+          color: #ffffff !important;
+          box-shadow: 0 0 15px color-mix(in srgb, var(--theme-primary) 20%, transparent);
         }
         .theme-btn:hover {
           filter: brightness(1.15);
@@ -408,7 +419,7 @@ export default function Registration() {
           box-shadow: 0 0 15px color-mix(in srgb, var(--theme-primary) 30%, transparent);
         }
         .theme-hover-bg:hover {
-          background-color: color-mix(in srgb, var(--theme-primary) 15%, transparent) !important;
+          background-color: color-mix(in srgb, var(--theme-primary) 5%, transparent) !important;
         }
         .theme-focus:focus {
           border-color: var(--theme-primary) !important;
@@ -423,8 +434,8 @@ export default function Registration() {
         <div className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none" style={{ backgroundImage: `url("${pageConfig.bgImage}")`, filter: 'blur(20px)' }} />
       ) : (
         <>
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none" style={{ backgroundColor: pageConfig.primaryColor, opacity: 0.2 }} />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-600/10 rounded-full blur-[100px] pointer-events-none" />
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px] pointer-events-none" style={{ backgroundColor: pageConfig.primaryColor, opacity: 0.1 }} />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
         </>
       )}
 
@@ -432,59 +443,72 @@ export default function Registration() {
         <div className="min-h-full w-full flex flex-col items-center justify-center p-4 sm:p-8 lg:p-12">
           {isLoading ? (
             <div className="text-center">
-              <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-white">Loading Event...</h2>
+              <Loader2 className="w-12 h-12 animate-spin text-theme-primary mx-auto mb-4" />
+              <h2 className="text-2xl font-serif font-normal text-[var(--theme-text)]">Loading Event...</h2>
             </div>
           ) : !targetEvent ? (
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-white mb-4">Event Not Found</h2>
-              <p className="text-slate-400 mb-8">The event you are looking for does not exist or has been removed.</p>
-              <button onClick={() => navigate('/')} className="px-6 py-3 rounded-xl text-white font-bold transition-colors theme-btn">
+              <h2 className="text-3xl font-serif font-normal text-[var(--theme-text)] mb-4">Event Not Found</h2>
+              <p className="text-[var(--theme-text)]/70 mb-8 font-sans">The event you are looking for does not exist or has been removed.</p>
+              <button onClick={() => navigate('/')} className="px-6 py-3 rounded-none font-serif font-normal transition-colors theme-btn text-white">
+                Return Home
+              </button>
+            </div>
+          ) : !upiConfig && targetEvent.tiers?.some(t => Number(t.price) > 0) ? (
+            <div className="text-center">
+              <h2 className="text-3xl font-serif font-normal text-red-500 mb-4">Event Not Available</h2>
+              <p className="text-[var(--theme-text)]/70 mb-8 font-sans">This event has not been fully configured for payments yet.</p>
+              <button onClick={() => navigate('/')} className="px-6 py-3 rounded-none font-serif font-normal transition-colors theme-btn text-white">
                 Return Home
               </button>
             </div>
           ) : (
-            <div className="max-w-3xl w-full mx-auto my-auto backdrop-blur-xl border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col theme-card-bg">
+            <div className="max-w-3xl w-full mx-auto my-auto backdrop-blur-xl border border-gray-200/50 rounded-none overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex flex-col theme-card-bg">
             {/* Event Info Top Banner */}
-            <div className="w-full aspect-[16/9] sm:aspect-video relative overflow-hidden bg-slate-900 border-b border-slate-700">
+            <div className="w-full aspect-[16/9] sm:aspect-video relative overflow-hidden bg-gray-100 border-b border-gray-200/50">
               <img src={targetEvent.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-cover" />
             </div>
 
             {/* Ticket Selection Content */}
             <div className="w-full p-6 sm:p-8 flex flex-col justify-center">
               {/* Event Header */}
-              <div className="mb-8 pb-8 border-b border-slate-700/50 text-center">
-                <h1 className="text-3xl sm:text-4xl font-black text-white leading-tight mb-4">{targetEvent.title}</h1>
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-6 text-slate-300">
+              <div className="mb-8 pb-8 border-b border-gray-200/50 text-center">
+                <h1 className="text-3xl sm:text-4xl font-serif font-normal text-[var(--theme-text)] leading-tight mb-4">{targetEvent.title}</h1>
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-6 text-[var(--theme-text)]/70">
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-5 h-5 theme-text" />
-                    <span className="font-medium text-sm sm:text-base">{targetEvent.date}</span>
+                    <span className="font-sans text-sm sm:text-base">{targetEvent.date}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <MapPin className="w-5 h-5 theme-text" />
-                    <span className="font-medium text-sm sm:text-base">{targetEvent.venue}</span>
+                    <span className="font-sans text-sm sm:text-base">{targetEvent.venue}</span>
                   </div>
                 </div>
               </div>
 
-              {bookingState === 'idle' || bookingState === 'loading' ? (
+              {isEventPast ? (
+                <div className="text-center py-12 animate-in fade-in">
+                  <h3 className="text-2xl font-serif font-bold text-red-500 mb-2">Registrations Closed</h3>
+                  <p className="text-[var(--theme-text)]/70 font-sans">This event has already taken place.</p>
+                </div>
+              ) : bookingState === 'idle' || bookingState === 'loading' ? (
                 <>
                   {!selectedTier ? (
                     <div className="space-y-6 animate-in fade-in">
-                      <h3 className="text-xl font-bold text-white mb-2">Select a Ticket</h3>
+                      <h3 className="text-xl font-serif font-normal text-[var(--theme-text)] mb-2">Select a Ticket</h3>
                       <div className="space-y-4">
                         {targetEvent.tiers.map(tier => (
                           <div 
                             key={tier.id}
                             onClick={() => tier.available > 0 && setSelectedTier(tier)}
-                            className={`p-5 rounded-2xl border-2 transition-all ${tier.available > 0 ? 'theme-card-bg border-slate-700 theme-hover-border theme-hover-bg cursor-pointer shadow-lg' : 'bg-slate-900/50 border-slate-800 opacity-60 cursor-not-allowed'} flex justify-between items-center`}
+                            className={`p-5 rounded-none border-2 transition-all ${tier.available > 0 ? 'bg-white/50 border-gray-200 theme-hover-border theme-hover-bg cursor-pointer shadow-sm' : 'bg-gray-100 border-gray-200 opacity-60 cursor-not-allowed'} flex justify-between items-center`}
                           >
                             <div>
-                              <h4 className="font-bold text-white text-lg">{tier.name}</h4>
-                              <p className="text-sm text-slate-400 mt-1">{tier.available > 0 ? `${tier.available} passes remaining` : 'Sold Out'}</p>
+                              <h4 className="font-serif font-normal text-[var(--theme-text)] text-lg">{tier.name}</h4>
+                              <p className="text-sm font-sans text-[var(--theme-text)]/60 mt-1">{tier.available > 0 ? `${tier.available} passes remaining` : 'Sold Out'}</p>
                             </div>
                             <div className="text-right">
-                              <div className="font-black text-2xl text-white">{Number(tier.price) === 0 ? "Free" : `${currencySymbol}${Number(tier.price).toFixed(2)}`}</div>
+                              <div className="font-serif font-normal text-2xl text-[var(--theme-text)]">{Number(tier.price) === 0 ? "Free" : `${currencySymbol}${Number(tier.price).toFixed(2)}`}</div>
                             </div>
                           </div>
                         ))}
@@ -493,29 +517,29 @@ export default function Registration() {
                   ) : (
                     <div className="space-y-6 animate-in slide-in-from-right-8 duration-300">
                       <div className="flex items-center space-x-4 mb-4">
-                        <button onClick={() => setSelectedTier(null)} className="text-sm theme-text font-semibold hover:opacity-80 transition-opacity">← Back to Tiers</button>
+                        <button onClick={() => setSelectedTier(null)} className="text-sm theme-text font-serif font-normal hover:opacity-80 transition-opacity">← Back to Tiers</button>
                       </div>
                       
-                      <div className="theme-card-bg border border-slate-700 rounded-xl p-5 space-y-4">
-                        <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
-                          <span className="text-slate-300">Ticket Type</span>
-                          <span className="font-bold text-white">{selectedTier.name}</span>
+                      <div className="bg-white/50 border border-gray-200 rounded-none p-5 space-y-4">
+                        <div className="flex justify-between items-center pb-4 border-b border-gray-200/50">
+                          <span className="text-[var(--theme-text)]/70 font-sans text-sm">Ticket Type</span>
+                          <span className="font-serif font-normal text-[var(--theme-text)]">{selectedTier.name}</span>
                         </div>
-                        <div className="flex justify-between items-center pb-4 border-b border-slate-700/50">
-                          <span className="text-slate-300">Price</span>
-                          <span className="font-bold text-white">{Number(selectedTier.price) === 0 ? "Free" : `${currencySymbol}${Number(selectedTier.price).toFixed(2)}`}</span>
+                        <div className="flex justify-between items-center pb-4 border-b border-gray-200/50">
+                          <span className="text-[var(--theme-text)]/70 font-sans text-sm">Price</span>
+                          <span className="font-serif font-normal text-[var(--theme-text)]">{Number(selectedTier.price) === 0 ? "Free" : `${currencySymbol}${Number(selectedTier.price).toFixed(2)}`}</span>
                         </div>
                         <div className="flex justify-between items-center pt-2 text-lg">
-                          <span>Total</span>
-                          <span>{Number(selectedTier.price) === 0 ? "Free" : `${currencySymbol}${Number(selectedTier.price).toFixed(2)}`}</span>
+                          <span className="font-sans text-sm text-[var(--theme-text)]/70">Total</span>
+                          <span className="font-serif font-normal text-[var(--theme-text)]">{Number(selectedTier.price) === 0 ? "Free" : `${currencySymbol}${Number(selectedTier.price).toFixed(2)}`}</span>
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        <label className="text-sm font-bold text-slate-300 uppercase tracking-wider">Attendee Details</label>
-                        {!customNameField && <input type="text" placeholder="Full Name" required value={attendeeName} onChange={e => setAttendeeName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
-                        {!customEmailField && <input type="email" placeholder="Email Address" required value={attendeeEmail} onChange={e => setAttendeeEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
-                        {!customPhoneField && <input type="tel" placeholder="Phone Number" required value={attendeePhone} onChange={e => setAttendeePhone(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
+                        <label className="text-xs font-serif font-normal text-[var(--theme-text)]/60 uppercase tracking-widest">Attendee Details</label>
+                        {!customNameField && <input type="text" placeholder="Full Name" required value={attendeeName} onChange={e => setAttendeeName(e.target.value)} className="w-full bg-white border border-gray-200 rounded-none px-4 py-3 text-[var(--theme-text)] placeholder-gray-400 focus:outline-none focus:ring-1 theme-focus transition-all shadow-sm" />}
+                        {!customEmailField && <input type="email" placeholder="Email Address" required value={attendeeEmail} onChange={e => setAttendeeEmail(e.target.value)} className="w-full bg-white border border-gray-200 rounded-none px-4 py-3 text-[var(--theme-text)] placeholder-gray-400 focus:outline-none focus:ring-1 theme-focus transition-all shadow-sm" />}
+                        {!customPhoneField && <input type="tel" placeholder="Phone Number" required value={attendeePhone} onChange={e => setAttendeePhone(e.target.value)} className="w-full bg-white border border-gray-200 rounded-none px-4 py-3 text-[var(--theme-text)] placeholder-gray-400 focus:outline-none focus:ring-1 theme-focus transition-all shadow-sm" />}
                         
                         {(targetEvent.customFormFields || []).map(field => (
                           <input 
@@ -525,14 +549,14 @@ export default function Registration() {
                             required={field.required}
                             value={customFormData[field.id] || ''}
                             onChange={e => setCustomFormData({...customFormData, [field.id]: e.target.value})}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" 
+                            className="w-full bg-white border border-gray-200 rounded-none px-4 py-3 text-[var(--theme-text)] placeholder-gray-400 focus:outline-none focus:ring-1 theme-focus transition-all shadow-sm" 
                           />
                         ))}
                       </div>
 
                       <div className="pt-4">
                         {registrationError && (
-                          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium flex items-start gap-2">
+                          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-none text-red-600 text-sm font-sans flex items-start gap-2">
                             <Activity className="w-5 h-5 shrink-0 mt-0.5" />
                             <p>{registrationError}</p>
                           </div>
@@ -540,7 +564,7 @@ export default function Registration() {
                         <button 
                           onClick={handleBookTicket}
                           disabled={bookingState === 'loading' || isOtpSending}
-                          className="w-full py-4 rounded-xl theme-btn text-white font-bold text-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                          className="w-full py-4 rounded-none theme-btn text-white font-serif font-normal text-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(0,0,0,0.1)]"
                         >
                           {bookingState === 'loading' || isOtpSending ? (
                             <><Loader2 className="w-5 h-5 animate-spin" /><span>{isOtpSending ? 'Sending OTP...' : 'Processing...'}</span></>
@@ -555,22 +579,22 @@ export default function Registration() {
               ) : bookingState === 'otp_verification' ? (
                 <div className="space-y-6 animate-in slide-in-from-right-8 duration-300">
                   <div className="flex items-center space-x-4 mb-4">
-                    <button onClick={() => setBookingState('idle')} className="text-sm theme-text font-semibold hover:opacity-80 transition-opacity">← Back to Details</button>
+                    <button onClick={() => setBookingState('idle')} className="text-sm theme-text font-serif font-normal hover:opacity-80 transition-opacity">← Back to Details</button>
                   </div>
                   <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-white mb-2">Email Verification</h3>
-                    <p className="text-slate-400">An OTP has been sent to <strong className="text-white">{finalEmail}</strong>.</p>
+                    <h3 className="text-2xl font-serif font-normal text-[var(--theme-text)] mb-2">Email Verification</h3>
+                    <p className="text-[var(--theme-text)]/70 font-sans">An OTP has been sent to <strong className="text-[var(--theme-text)]">{finalEmail}</strong>.</p>
                   </div>
                   
-                  <div className="theme-card-bg border border-slate-700 rounded-xl p-6 mt-6">
-                    <label className="text-sm font-bold text-slate-300 uppercase tracking-wider mb-2 block">Enter OTP</label>
+                  <div className="bg-white/50 border border-gray-200 rounded-none p-6 mt-6">
+                    <label className="text-xs font-serif font-normal text-[var(--theme-text)]/60 uppercase tracking-widest mb-2 block">Enter OTP</label>
                     <input 
                       type="text" 
                       placeholder="6-digit OTP" 
                       maxLength="6"
                       value={enteredOtp} 
                       onChange={e => setEnteredOtp(e.target.value)} 
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 text-center tracking-widest text-2xl font-mono focus:outline-none focus:ring-1 theme-focus transition-all" 
+                      className="w-full bg-white border border-gray-200 rounded-none px-4 py-3 text-[var(--theme-text)] placeholder-gray-400 text-center tracking-widest text-2xl font-mono focus:outline-none focus:ring-1 theme-focus transition-all shadow-sm" 
                     />
                     {otpError && <p className="text-red-500 text-sm mt-2">{otpError}</p>}
                   </div>
@@ -578,7 +602,7 @@ export default function Registration() {
                   <button 
                     onClick={handleVerifyOtp}
                     disabled={!enteredOtp || enteredOtp.length < 6}
-                    className="w-full py-4 rounded-xl theme-btn text-white font-bold text-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-6"
+                    className="w-full py-4 rounded-none theme-btn text-white font-serif font-normal text-lg flex items-center justify-center space-x-2 transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-6 shadow-[0_0_15px_rgba(0,0,0,0.1)]"
                   >
                     <span>Verify & Continue</span>
                   </button>
@@ -586,33 +610,33 @@ export default function Registration() {
               ) : bookingState === 'payment' ? (
                   <div className="space-y-6 animate-in slide-in-from-right-8 duration-300">
                     <div className="flex items-center space-x-4 mb-4">
-                      <button onClick={() => setBookingState('idle')} className="text-sm theme-text font-semibold hover:opacity-80 transition-opacity">← Back to Details</button>
+                      <button onClick={() => setBookingState('idle')} className="text-sm theme-text font-serif font-normal hover:opacity-80 transition-opacity">← Back to Details</button>
                     </div>
                     <div className="text-center mb-6">
-                      <h3 className="text-2xl font-bold text-white mb-2">Complete Payment</h3>
-                      <p className="text-slate-400">Scan the QR code below or use the UPI ID to pay <strong className="text-white">{currencySymbol}{Number(selectedTier.price).toFixed(2)}</strong></p>
+                      <h3 className="text-2xl font-serif font-normal text-[var(--theme-text)] mb-2">Complete Payment</h3>
+                      <p className="text-[var(--theme-text)]/70 font-sans">Scan the QR code below or use the UPI ID to pay <strong className="text-[var(--theme-text)]">{currencySymbol}{Number(selectedTier.price).toFixed(2)}</strong></p>
                     </div>
-                    <div className="bg-white p-6 rounded-2xl flex flex-col items-center justify-center space-y-4 max-w-sm mx-auto shadow-2xl">
-                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${upiConfig.upiId}&pn=${upiConfig.upiName}&am=${Number(selectedTier.price).toFixed(2)}&cu=INR`)}`} alt="UPI QR" className="w-48 h-48 rounded-lg" />
+                    <div className="bg-white border border-gray-200 p-6 rounded-none flex flex-col items-center justify-center space-y-4 max-w-sm mx-auto shadow-sm">
+                      <img src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`upi://pay?pa=${upiConfig.upiId}&pn=${upiConfig.upiName}&am=${Number(selectedTier.price).toFixed(2)}&cu=INR`)}`} alt="UPI QR" className="w-48 h-48 border border-gray-100" />
                       <div className="text-center w-full">
-                        <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">UPI ID</p>
-                        <p className="text-slate-900 font-black text-lg font-mono break-all bg-slate-100 p-2 rounded">{upiConfig.upiId}</p>
+                        <p className="text-[var(--theme-text)]/50 text-xs font-serif font-normal uppercase tracking-widest mb-1">UPI ID</p>
+                        <p className="text-[var(--theme-text)] font-serif font-normal text-lg font-mono break-all bg-gray-50 p-2 border border-gray-100">{upiConfig.upiId}</p>
                       </div>
                       <div className="text-center w-full">
-                        <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">Payee Name</p>
-                        <p className="text-slate-900 font-bold">{upiConfig.upiName || 'Event Organizer'}</p>
+                        <p className="text-[var(--theme-text)]/50 text-xs font-serif font-normal uppercase tracking-widest mb-1">Payee Name</p>
+                        <p className="text-[var(--theme-text)] font-serif font-normal">{upiConfig.upiName || 'Event Organizer'}</p>
                       </div>
                     </div>
                     
-                    <div className="theme-card-bg border border-slate-700 rounded-xl p-6 mt-6">
-                      <h4 className="text-lg font-bold text-white mb-4">Upload Screenshot</h4>
-                      <p className="text-slate-400 text-sm mb-4">After completing the payment, upload a screenshot of the successful transaction to receive your pass.</p>
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-600 border-dashed rounded-lg cursor-pointer bg-slate-900/50 hover:bg-slate-800/50 transition-colors">
+                    <div className="bg-white/50 border border-gray-200 rounded-none p-6 mt-6">
+                      <h4 className="text-lg font-serif font-normal text-[var(--theme-text)] mb-4">Upload Screenshot</h4>
+                      <p className="text-[var(--theme-text)]/70 text-sm mb-4 font-sans">After completing the payment, upload a screenshot of the successful transaction to receive your pass.</p>
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed cursor-pointer bg-white hover:bg-gray-50 transition-colors">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <svg className="w-8 h-8 mb-4 text-slate-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                          <svg className="w-8 h-8 mb-4 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
                             <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
                           </svg>
-                          <p className="mb-2 text-sm text-slate-400"><span className="font-semibold text-white">Click to upload</span> or drag and drop</p>
+                          <p className="mb-2 text-sm text-gray-500 font-sans"><span className="font-semibold text-[var(--theme-text)]">Click to upload</span> or drag and drop</p>
                         </div>
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                           const file = e.target.files[0];
@@ -624,9 +648,9 @@ export default function Registration() {
                         }} />
                       </label>
                       {paymentScreenshot && (
-                        <div className="mt-4 relative">
-                          <img src={paymentScreenshot} alt="Payment Screenshot" className="max-h-40 rounded-lg mx-auto" />
-                          <button onClick={() => setPaymentScreenshot('')} className="absolute top-2 right-2 bg-red-500/80 hover:bg-red-500 text-white p-1.5 rounded-full"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                        <div className="mt-4 relative p-2 border border-gray-200 bg-white inline-block w-full text-center">
+                          <img src={paymentScreenshot} alt="Payment Screenshot" className="max-h-40 mx-auto" />
+                          <button onClick={() => setPaymentScreenshot('')} className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 shadow-md"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                         </div>
                       )}
                     </div>
@@ -634,7 +658,7 @@ export default function Registration() {
                     <button 
                       onClick={executeBooking}
                       disabled={!paymentScreenshot || bookingState === 'loading'}
-                      className="w-full py-4 rounded-xl bg-theme-primary text-theme-text font-bold text-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-6 shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+                      className="w-full py-4 rounded-none theme-btn text-white font-serif font-normal text-lg flex items-center justify-center space-x-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed mt-6 shadow-[0_0_15px_rgba(0,0,0,0.1)]"
                     >
                       {bookingState === 'loading' ? (
                         <><Loader2 className="w-5 h-5 animate-spin" /><span>Processing...</span></>
@@ -646,14 +670,14 @@ export default function Registration() {
                 ) : (
                   <div className="flex flex-col items-center justify-center space-y-6 pt-8 animate-in fade-in zoom-in duration-500">
                     <div className="relative w-24 h-24">
-                      <div className="absolute inset-0 rounded-full border-2 border-green-500/30" style={{ backgroundColor: 'rgba(34,197,94,0.1)' }}></div>
-                      <div className="absolute inset-0 rounded-full flex items-center justify-center border-2 border-green-500/30 text-green-400">
+                      <div className="absolute inset-0 rounded-none border-2 border-green-500/30" style={{ backgroundColor: 'rgba(34,197,94,0.1)' }}></div>
+                      <div className="absolute inset-0 rounded-none flex items-center justify-center border-2 border-green-500/30 text-green-500">
                         <CheckCircle2 className="w-12 h-12" />
                       </div>
                     </div>
                     <div className="text-center space-y-2 mb-8">
-                      <h3 className="text-2xl font-bold text-white">{paymentScreenshot ? 'Payment Under Review!' : "You're All Set!"}</h3>
-                      <p className="text-slate-400 text-sm">
+                      <h3 className="text-2xl font-serif font-normal text-[var(--theme-text)]">{paymentScreenshot ? 'Payment Under Review!' : "You're All Set!"}</h3>
+                      <p className="text-[var(--theme-text)]/70 text-sm font-sans">
                         {paymentScreenshot 
                           ? 'Your payment screenshot has been uploaded. An admin will verify the transaction and send the pass to your email.' 
                           : 'A confirmation email has been sent to your inbox.'}
