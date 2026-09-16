@@ -10,6 +10,7 @@ const INITIAL_EVENTS = [];
 
 function DynamicTicket({ template, previewTicket, tierName, attendeeId, attendeeName }) {
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState('');
   const ticketRef = useRef(null);
 
   // Simple fallback template when none is provided
@@ -165,7 +166,7 @@ function DynamicTicket({ template, previewTicket, tierName, attendeeId, attendee
       link.click();
     } catch (err) {
       console.error('Download error:', err);
-      alert('Failed to generate ticket image. Please try again.');
+      setDownloadError('Failed to generate ticket image. Please try again.');
     } finally {
       setDownloading(false);
     }
@@ -185,6 +186,11 @@ function DynamicTicket({ template, previewTicket, tierName, attendeeId, attendee
           </div>
         </div>
       </div>
+      {downloadError && (
+        <div className="mt-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium w-full text-center">
+          {downloadError}
+        </div>
+      )}
       <button onClick={handleDownload} disabled={downloading} className="mt-10 px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white rounded-xl font-bold shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all flex items-center space-x-2">
         {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
         <span>{downloading ? 'Processing Ticket...' : 'Download Pass'}</span>
@@ -237,6 +243,7 @@ export default function Registration() {
   const [enteredOtp, setEnteredOtp] = useState('');
   const [isOtpSending, setIsOtpSending] = useState(false);
   const [otpError, setOtpError] = useState('');
+  const [registrationError, setRegistrationError] = useState('');
 
   const customNameField = targetEvent?.customFormFields?.find(f => f.label.toLowerCase().includes('name'));
   const customEmailField = targetEvent?.customFormFields?.find(f => f.label.toLowerCase().includes('email'));
@@ -255,6 +262,7 @@ export default function Registration() {
     setGeneratedPassId('');
     setEnteredOtp('');
     setOtpError('');
+    setRegistrationError('');
   };
 
   const executeBooking = async () => {
@@ -305,12 +313,13 @@ export default function Registration() {
 
   const handleBookTicket = async () => {
     if (!finalName || !finalEmail || !finalPhone) {
-      alert("Please provide your Name, Email, and Phone Number.");
+      setRegistrationError("Please provide your Name, Email, and Phone Number.");
       return;
     }
 
     setIsOtpSending(true);
     setOtpError('');
+    setRegistrationError('');
     try {
       const res = await fetch(`http://localhost:3000/api/v1/events/${eventId}/send-otp`, {
         method: 'POST',
@@ -321,11 +330,11 @@ export default function Registration() {
       if (res.ok) {
         setBookingState('otp_verification');
       } else {
-        alert(data.error || 'Failed to send OTP.');
+        setRegistrationError(data.error || 'Failed to send OTP.');
       }
     } catch (err) {
       console.error(err);
-      alert('Error sending OTP. Please check backend connection.');
+      setRegistrationError('Error sending OTP. Please check backend connection.');
     } finally {
       setIsOtpSending(false);
     }
@@ -522,6 +531,12 @@ export default function Registration() {
                       </div>
 
                       <div className="pt-4">
+                        {registrationError && (
+                          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-sm font-medium flex items-start gap-2">
+                            <Activity className="w-5 h-5 shrink-0 mt-0.5" />
+                            <p>{registrationError}</p>
+                          </div>
+                        )}
                         <button 
                           onClick={handleBookTicket}
                           disabled={bookingState === 'loading' || isOtpSending}

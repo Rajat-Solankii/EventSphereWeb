@@ -16,6 +16,7 @@ export default function UserManagement() {
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'EVENT_MANAGER' });
   const [userToDelete, setUserToDelete] = useState(null);
   const [deleteError, setDeleteError] = useState(null);
+  const [modalError, setModalError] = useState('');
 
   // Fetch users from admin API
   const fetchUsers = async () => {
@@ -54,8 +55,8 @@ export default function UserManagement() {
 
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!newUser.email) return alert('Email is required');
-    setOtpLoading(true);
+    if (!newUser.email) { setModalError('Email is required'); return; }
+    setOtpLoading(true); setModalError('');
     try {
       const res = await fetch('http://localhost:3000/api/admin/users/send-otp', {
         method: 'POST',
@@ -69,10 +70,10 @@ export default function UserManagement() {
       if (res.ok) {
         setCreateStep(2);
       } else {
-        alert(data.message || 'Failed to send OTP');
+        setModalError(data.message || 'Failed to send OTP');
       }
     } catch (err) {
-      alert('Error sending OTP');
+      setModalError('Error sending OTP');
     } finally {
       setOtpLoading(false);
     }
@@ -80,8 +81,8 @@ export default function UserManagement() {
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    if (!otp) return alert('OTP is required');
-    setOtpLoading(true);
+    if (!otp) { setModalError('OTP is required'); return; }
+    setOtpLoading(true); setModalError('');
     try {
       const res = await fetch('http://localhost:3000/api/admin/users/verify-otp', {
         method: 'POST',
@@ -95,10 +96,10 @@ export default function UserManagement() {
       if (res.ok) {
         setCreateStep(3);
       } else {
-        alert(data.message || 'Invalid OTP');
+        setModalError(data.message || 'Invalid OTP');
       }
     } catch (err) {
-      alert('Error verifying OTP');
+      setModalError('Error verifying OTP');
     } finally {
       setOtpLoading(false);
     }
@@ -106,6 +107,7 @@ export default function UserManagement() {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    setModalError('');
     try {
       const res = await fetch('http://localhost:3000/api/admin/users', {
         method: 'POST',
@@ -123,10 +125,10 @@ export default function UserManagement() {
         fetchUsers();
       } else {
         const data = await res.json();
-        alert(data.message || 'Failed to create user');
+        setModalError(data.message || 'Failed to create user');
       }
     } catch (err) {
-      alert('Error creating user');
+      setModalError('Error creating user');
     }
   };
 
@@ -158,9 +160,9 @@ export default function UserManagement() {
         method,
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
-      if (res.ok) fetchUsers();
+      if (res.ok) { fetchUsers(); setDeleteError(null); }
     } catch (err) {
-      alert('Failed to update event access');
+      setDeleteError('Failed to update event access');
     }
   };
 
@@ -300,9 +302,15 @@ export default function UserManagement() {
           <div className="bg-white border border-theme-primary/20 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center p-6 border-b border-theme-primary/20 bg-theme-bg/20">
               <h3 className="text-xl font-bold text-theme-text">Add Staff Member</h3>
-              <button onClick={() => { setShowCreateModal(false); setCreateStep(1); }} className="text-theme-text/60 hover:text-theme-text"><X size={20} /></button>
+              <button onClick={() => { setShowCreateModal(false); setCreateStep(1); setModalError(''); }} className="text-theme-text/60 hover:text-theme-text"><X size={20} /></button>
             </div>
             <div className="p-6">
+              {modalError && (
+                <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-600 text-sm font-medium flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p>{modalError}</p>
+                </div>
+              )}
               {createStep === 1 && (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                   <div>
@@ -311,7 +319,7 @@ export default function UserManagement() {
                     <p className="text-xs text-theme-text/60 mt-2">We will send a 6-digit OTP to this email to verify it belongs to the staff member.</p>
                   </div>
                   <div className="pt-4 flex justify-end gap-3">
-                    <button type="button" onClick={() => { setShowCreateModal(false); setCreateStep(1); }} className="px-5 py-2 rounded-xl text-theme-text/80 hover:bg-theme-bg transition-colors text-sm font-semibold">Cancel</button>
+                    <button type="button" onClick={() => { setShowCreateModal(false); setCreateStep(1); setModalError(''); }} className="px-5 py-2 rounded-xl text-theme-text/80 hover:bg-theme-bg transition-colors text-sm font-semibold">Cancel</button>
                     <button type="submit" disabled={otpLoading} className="px-5 py-2 bg-theme-primary hover:bg-theme-primary text-theme-text rounded-xl text-sm font-bold shadow-lg transition-colors flex items-center gap-2">
                       {otpLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                       Send OTP

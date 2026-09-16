@@ -583,6 +583,50 @@ router.delete('/sessions', require('../middleware/auth').verifyToken, async (req
   }
 });
 
+// ===== DELETE OWN ACCOUNT =====
+// DELETE /api/auth/me
+router.delete('/me', require('../middleware/auth').verifyToken, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) {
+      return res.status(400).json({ success: false, message: 'Password is required to delete your account.' });
+    }
+
+    const userId = req.user.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, message: 'Incorrect password.' });
+    }
+    
+    if (user.role === 'ORG_ADMIN' && user.organization_id) {
+      const otherAdmins = await prisma.user.count({
+        where: { organization_id: user.organization_id, role: 'ORG_ADMIN', id: { not: userId } }
+      });
+      if (otherAdmins === 0) {
+        await prisma.organization.delete({ where: { id: user.organization_id } });
+        res.clearCookie('refresh_token');
+        return res.status(200).json({ success: true, message: 'Account and organization deleted successfully.' });
+      }
+    }
+
+    await prisma.session.deleteMany({ where: { user_id: userId } });
+    await prisma.eventAccess.deleteMany({ where: { user_id: userId } });
+    await prisma.user.delete({ where: { id: userId } });
+    
+    res.clearCookie('refresh_token');
+    return res.status(200).json({ success: true, message: 'Account deleted successfully.' });
+  } catch (err) {
+    console.error('Delete own account error:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete account.' });
+  }
+});
+
 // ===== VERIFY EMAIL =====
 // GET /api/auth/verify-email?token=TOKEN
 router.get('/verify-email', async (req, res) => {

@@ -1305,7 +1305,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     };
 
     const handleDeclinePayment = async (ticketId) => {
-      if (!confirm('Are you sure you want to decline this payment? The ticket will be put on hold and the capacity will be freed.')) return;
+      const yes = await confirm('Decline Payment', 'Are you sure you want to decline this payment? The ticket will be put on hold and the capacity will be freed.');
+      if (!yes) return;
       setDeclineState(prev => ({ ...prev, [ticketId]: 'loading' }));
       try {
         const res = await fetch(`http://localhost:3000/api/v1/tickets/${ticketId}/decline-payment`, {

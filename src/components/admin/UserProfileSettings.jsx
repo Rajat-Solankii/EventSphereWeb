@@ -3,7 +3,7 @@ import { X, Camera, Lock, User, Mail, Save, Loader2, CheckCircle, Shield, KeyRou
 import { useAuth } from '../../context/AuthContext';
 
 export default function UserProfileSettings({ onClose }) {
-  const { user, updateUser, authFetch } = useAuth();
+  const { user, updateUser, authFetch, logout } = useAuth();
   
   const [activeTab, setActiveTab] = useState('general');
   
@@ -34,6 +34,8 @@ export default function UserProfileSettings({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
   
   const fileInputRef = useRef(null);
 
@@ -52,6 +54,36 @@ export default function UserProfileSettings({ onClose }) {
       reader.onloadend = () => setProfileImage(reader.result);
       reader.readAsDataURL(file);
     }
+  };
+
+  // ===== DELETE ACCOUNT =====
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      setErrorMsg('Please enter your password to confirm deletion.');
+      setShowDeleteConfirm(false);
+      return;
+    }
+    setLoading(true); clearMessages();
+    try {
+      const res = await authFetch('/api/auth/me', { 
+        method: 'DELETE',
+        body: JSON.stringify({ password: deletePassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        logout();
+        window.location.href = '/login';
+      } else {
+        setErrorMsg(data.message || 'Failed to delete account.');
+        setShowDeleteConfirm(false);
+        setDeletePassword('');
+      }
+    } catch { 
+      setErrorMsg('An error occurred.'); 
+      setShowDeleteConfirm(false);
+      setDeletePassword('');
+    }
+    finally { setLoading(false); }
   };
 
   // ===== SAVE BASIC INFO (name, photo) =====
@@ -419,6 +451,20 @@ export default function UserProfileSettings({ onClose }) {
                 </div>
               )}
             </div>
+            {/* Delete Account Section */}
+            <div className="mt-8 pt-6 border-t border-theme-primary/10">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-rose-500">Delete Account</h4>
+                  <p className="text-xs text-theme-text/60 mt-1">Permanently delete your account and all data.</p>
+                </div>
+                <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={loading}
+                  className="px-4 py-1.5 text-xs font-bold text-rose-500 border border-rose-500 rounded-lg hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -589,6 +635,45 @@ export default function UserProfileSettings({ onClose }) {
         )}
 
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => !loading && setShowDeleteConfirm(false)} />
+          <div className="relative bg-white border border-rose-500/20 rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Shield className="w-8 h-8 text-rose-500" />
+            </div>
+            <h3 className="text-xl font-bold text-theme-text mb-2">Delete Account?</h3>
+            <p className="text-sm text-theme-text/60 mb-4">
+              Are you sure you want to permanently delete your account? This action cannot be undone and all your data will be lost.
+            </p>
+            <input 
+              type="password" 
+              placeholder="Enter your password to confirm"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full bg-theme-bg/50 border border-theme-primary/20 rounded-xl px-4 py-2.5 text-theme-text text-sm focus:border-theme-primary focus:outline-none mb-6"
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); }} 
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl font-bold text-theme-text/70 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteAccount} 
+                disabled={loading}
+                className="flex-1 py-2.5 rounded-xl font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors flex justify-center items-center gap-2 shadow-lg shadow-rose-500/20"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
