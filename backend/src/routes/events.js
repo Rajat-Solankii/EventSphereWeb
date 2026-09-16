@@ -355,6 +355,9 @@ The JSON MUST match this structure exactly:
 
   } catch (err) {
     console.error('AI chat error:', err);
+    if ((err.message && err.message.includes('fetch failed')) || String(err).includes('fetch failed')) {
+      return res.status(503).json({ error: 'Network error: Failed to connect to the AI service. Please check your internet connection.' });
+    }
     res.status(500).json({ error: 'Failed to process AI chat. Make sure your API key is correct.' });
   }
 });

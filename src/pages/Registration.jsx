@@ -304,8 +304,8 @@ export default function Registration() {
   };
 
   const handleBookTicket = async () => {
-    if (!finalName || !finalEmail) {
-      alert("Please provide both your Name and Email.");
+    if (!finalName || !finalEmail || !finalPhone) {
+      alert("Please provide your Name, Email, and Phone Number.");
       return;
     }
 
@@ -506,7 +506,7 @@ export default function Registration() {
                         <label className="text-sm font-bold text-slate-300 uppercase tracking-wider">Attendee Details</label>
                         {!customNameField && <input type="text" placeholder="Full Name" required value={attendeeName} onChange={e => setAttendeeName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
                         {!customEmailField && <input type="email" placeholder="Email Address" required value={attendeeEmail} onChange={e => setAttendeeEmail(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
-                        {!customPhoneField && <input type="tel" placeholder="Phone Number (Optional)" value={attendeePhone} onChange={e => setAttendeePhone(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
+                        {!customPhoneField && <input type="tel" placeholder="Phone Number" required value={attendeePhone} onChange={e => setAttendeePhone(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 theme-focus transition-all" />}
                         
                         {(targetEvent.customFormFields || []).map(field => (
                           <input 

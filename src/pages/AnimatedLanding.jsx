@@ -2,38 +2,6 @@ import React, { useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
-// Spell Casting Animation Component for individual words or elements
-const SpellWord = ({ children, delay = 0, index = 0 }) => {
-  // Reduced scatter distances for better performance and less layout shifting
-  const startX = [40, -50, 30, -35, 60, -60][index % 6] + (index * 2);
-  const startY = [-40, 50, 35, -30, -60, 60][index % 6] - (index);
-  const startRotate = [20, -15, 30, -20, 45, -45][index % 6];
-  
-  return (
-    <motion.span
-      className="inline-block whitespace-pre-wrap"
-      initial={{ opacity: 0, x: startX, y: startY, rotate: startRotate, scale: 0.8 }}
-      whileInView={{ opacity: 1, x: 0, y: 0, rotate: 0, scale: 1 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.8, ease: [0.2, 0.65, 0.3, 0.9], delay: delay + (index * 0.03) }}
-      style={{ willChange: "transform, opacity" }}
-    >
-      {children}
-    </motion.span>
-  );
-};
-
-// Spell Casting Text Component to easily split long sentences into scattered words
-const SpellText = ({ text, delayOffset = 0, className = "" }) => {
-  return (
-    <span className={`inline-block ${className}`}>
-      {text.split(" ").map((word, i) => (
-        <SpellWord key={i} index={i} delay={delayOffset}>{word} </SpellWord>
-      ))}
-    </span>
-  );
-};
-
 export default function AnimatedLanding() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
@@ -127,18 +95,11 @@ export default function AnimatedLanding() {
       {/* Hero Section */}
       <main id="home" className="relative z-10 flex flex-col items-center justify-center text-center px-6 min-h-screen" style={{ marginTop: '-80px', paddingBottom: '10rem' }}>
         <h1 className="text-5xl sm:text-7xl md:text-8xl max-w-7xl font-normal font-serif text-black leading-[0.95] mt-20" style={{ letterSpacing: '-2.46px' }}>
-          <SpellWord index={0}>Beyond </SpellWord>
-          <SpellWord index={1}><span className="text-[#6F6F6F] italic">events, </span></SpellWord>
-          <SpellWord index={2}>we </SpellWord>
-          <SpellWord index={3}>craft </SpellWord>
-          <SpellWord index={4}><span className="text-[#6F6F6F] italic">the unforgettable.</span></SpellWord>
+          Beyond <span className="text-[#6F6F6F] italic">events, </span>we craft <span className="text-[#6F6F6F] italic">the unforgettable.</span>
         </h1>
         
         <p className="text-base sm:text-lg font-sans max-w-2xl mt-8 leading-relaxed text-[#6F6F6F]">
-          <SpellText 
-            delayOffset={0.4} 
-            text="Building platforms for visionary organizers, vibrant campuses, and thoughtful creators. Through the noise, we craft elegant ticketing experiences and seamless event management." 
-          />
+          Building platforms for visionary organizers, vibrant campuses, and thoughtful creators. Through the noise, we craft elegant ticketing experiences and seamless event management.
         </p>
 
         <motion.button 
@@ -160,7 +121,7 @@ export default function AnimatedLanding() {
       <section id="features" className="relative z-20 bg-white py-32 px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-4xl md:text-6xl font-serif text-black mb-16 text-center">
-            <SpellText text="Architecting the Experience" delayOffset={0.1} />
+            Architecting the Experience
           </h2>
           
           <div className="grid md:grid-cols-3 gap-12">
@@ -190,10 +151,10 @@ export default function AnimatedLanding() {
       <section id="events" className="relative z-20 bg-gray-50 py-32 px-6 border-y border-gray-100">
         <div className="max-w-7xl mx-auto text-center">
           <h2 className="text-4xl md:text-6xl font-serif text-black mb-6">
-            <SpellText text="Featured Moments" delayOffset={0.1} />
+            Featured Moments
           </h2>
           <p className="text-[#6F6F6F] max-w-2xl mx-auto mb-16">
-            <SpellText text="A glimpse into the extraordinary experiences curated on our platform." delayOffset={0.3} />
+            A glimpse into the extraordinary experiences curated on our platform.
           </p>
           
           <div className="grid md:grid-cols-2 gap-8">
@@ -229,10 +190,10 @@ export default function AnimatedLanding() {
       <section id="contact" className="relative z-20 bg-black py-32 px-6 text-white text-center">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-6xl font-serif mb-8">
-            <SpellText text="Ready to curate?" delayOffset={0} />
+            Ready to curate?
           </h2>
           <p className="text-gray-400 font-sans mb-12 text-lg">
-            <SpellText text="Join the hundreds of organizers redefining what an event should feel like." delayOffset={0.2} />
+            Join the hundreds of organizers redefining what an event should feel like.
           </p>
           <motion.button 
             initial={{ opacity: 0, scale: 0 }}

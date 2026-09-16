@@ -271,7 +271,7 @@ function ParticleBackground() {
 
 function AttendeeRegisterView({ events, allAttendees }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || 'all');
-  const activeEvent = selectedEventId === 'all' ? null : (events.find(e => e.id === selectedEventId) || events[0]);
+  const activeEvent = selectedEventId === 'all' ? null : (events.find(e => String(e.id) === String(selectedEventId)) || events[0]);
 
   const [attendees, setAttendees] = useState([]);
 
@@ -335,7 +335,7 @@ function AttendeeRegisterView({ events, allAttendees }) {
         <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
           <select
             value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+            onChange={(e) => setSelectedEventId(e.target.value)}
             className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 focus:ring-0 cursor-pointer appearance-none outline-none"
           >
             <option value="all" className="bg-white">All Events</option>
@@ -413,9 +413,133 @@ function AttendeeRegisterView({ events, allAttendees }) {
   );
 }
 
+function TransactionsView({ events, allAttendees }) {
+  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || 'all');
+  const activeEvent = selectedEventId === 'all' ? null : (events.find(e => String(e.id) === String(selectedEventId)) || events[0]);
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    try {
+      let filtered = allAttendees;
+      if (selectedEventId !== 'all' && activeEvent) {
+        filtered = allAttendees.filter(a => String(a.eventId) === String(activeEvent.id));
+      }
+      // Only show attendees that have a payment screenshot (i.e. a transaction)
+      setTransactions(filtered.filter(a => a.payment_screenshot));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [selectedEventId, activeEvent, allAttendees]);
+
+  if (!events || events.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in duration-700">
+        <div className="w-24 h-24 mb-6 rounded-none bg-gray-50 flex items-center justify-center border border-gray-200">
+          <CreditCard className="w-10 h-10 text-gray-400" />
+        </div>
+        <h2 className="text-4xl font-serif text-black mb-4">No Transactions Yet</h2>
+        <p className="text-gray-500 max-w-md font-sans leading-relaxed">
+          You haven't created any events yet. Once you launch an event and receive payments, they will appear here.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-6 relative z-10 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-serif font-normal text-theme-text mb-2">Transactions</h2>
+          <p className="text-theme-text/60">View and manage payment receipts and transactions.</p>
+        </div>
+
+        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
+          <select
+            value={selectedEventId}
+            onChange={(e) => setSelectedEventId(e.target.value)}
+            className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 focus:ring-0 cursor-pointer appearance-none outline-none"
+          >
+            <option value="all" className="bg-white">All Events</option>
+            {events.map(e => (
+              <option key={e.id} value={e.id} className="bg-white">{e.title}</option>
+            ))}
+          </select>
+          <div className="px-3 flex items-center justify-center border-l border-gray-100 pointer-events-none text-theme-text/60">
+            <ChevronDown className="w-4 h-4" />
+          </div>
+        </div>
+      </div>
+
+      <div className="glass-panel border border-gray-200 rounded-none overflow-hidden shadow-2xl bg-white/40 backdrop-blur-xl">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-theme-bg/40 border-b border-gray-100">
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Transaction ID</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Pass ID</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Attendee</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Event</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider">Status</th>
+                <th className="py-4 px-6 text-xs font-serif font-normal text-theme-text/60 uppercase tracking-wider text-right">Screenshot</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-theme-primary/10">
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-theme-text/50 italic">
+                    No transactions found.
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((txn, idx) => {
+                  const evt = events.find(e => e.id === txn.eventId);
+                  const txnId = `TXN-${txn.passId.substring(0, 8).toUpperCase()}`;
+                  return (
+                    <tr key={idx} className="hover:bg-black/5 transition-colors">
+                      <td className="py-4 px-6">
+                        <span className="font-mono text-xs font-medium text-black">{txnId}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className="font-mono text-xs text-theme-text/60 bg-theme-bg/30 px-2 py-1 rounded">{txn.passId}</span>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="font-serif font-normal text-theme-text">{txn.name}</div>
+                        <div className="text-sm text-gray-500 font-mono font-medium">{txn.email}</div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="font-serif font-normal text-black">{evt?.title || 'Unknown Event'}</div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`px-3 py-1 rounded-none text-xs font-serif font-normal border ${
+                          txn.status === 'PENDING' ? 'bg-amber-100 text-amber-700 border-amber-200' :
+                          txn.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' :
+                          txn.status === 'REJECTED' ? 'bg-rose-100 text-rose-700 border-rose-200' :
+                          'bg-black/10 text-black border-black/20'
+                        }`}>
+                          {txn.status || 'PAID'}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-right">
+                        <a href={txn.payment_screenshot} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-sm font-medium text-theme-primary hover:text-theme-secondary transition-colors">
+                          <ImageIcon className="w-4 h-4" />
+                          <span>View</span>
+                        </a>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LiveDashboardView({ events, allAttendees }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || null);
-  const activeEvent = events.find(e => e.id === selectedEventId) || events[0];
+  const activeEvent = events.find(e => String(e.id) === String(selectedEventId)) || events[0];
 
   if (!activeEvent || events.length === 0) {
     return (
@@ -447,7 +571,7 @@ function LiveDashboardView({ events, allAttendees }) {
         <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
           <select
             value={selectedEventId}
-            onChange={(e) => setSelectedEventId(Number(e.target.value))}
+            onChange={(e) => setSelectedEventId(e.target.value)}
             className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 focus:ring-0 cursor-pointer appearance-none outline-none"
           >
             {events.map(e => (
@@ -1418,6 +1542,10 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 <button onClick={() => {
                   if (!event.smtp_config) {
                     toast('Please setup the email configuration first before sharing the event link.', 'warning');
+                    return;
+                  }
+                  if (!event.upi_config) {
+                    toast('Please setup the payment / UPI configuration first before hosting the event.', 'warning');
                     return;
                   }
                   const link = `${window.location.origin}/event/${event.id}`;
@@ -2636,7 +2764,7 @@ function AdminDashboardInner() {
                 </div>
 
                 <NavItem icon={<Users size={18} />} label="Attendee Register" active={activeTab === 'attendees'} onClick={() => setActiveTab('attendees')} />
-                <NavItem icon={<CreditCard size={18} />} label="Transactions" onClick={() => setActiveTab('attendees')} />
+                <NavItem icon={<CreditCard size={18} />} label="Transactions" active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} />
               </>
             )}
           </nav>
@@ -2673,6 +2801,7 @@ function AdminDashboardInner() {
               ? (events.find(e => e.id === viewingEventId)?.title || 'Event Detail')
               : activeTab === 'events_management' ? 'Events Management'
                 : activeTab === 'attendees' ? 'Attendee Register'
+                  : activeTab === 'transactions' ? 'Transactions'
                   : activeTab === 'user_management' ? 'User Management'
                     : 'Live Dashboard'
             }
@@ -2698,6 +2827,8 @@ function AdminDashboardInner() {
             </div>
           ) : activeTab === 'attendees' ? (
             <AttendeeRegisterView events={events} allAttendees={allAttendees} />
+          ) : activeTab === 'transactions' ? (
+            <TransactionsView events={events} allAttendees={allAttendees} />
           ) : activeTab === 'user_management' ? (
             <UserManagement />
           ) : (
