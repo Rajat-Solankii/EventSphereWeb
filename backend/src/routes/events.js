@@ -70,6 +70,27 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+// ===== GET ALL PUBLIC EVENTS =====
+router.get('/public/all', async (req, res) => {
+  try {
+    const events = await prisma.event.findMany({
+      include: { organization: { select: { name: true } } },
+      orderBy: { date_time: 'asc' }
+    });
+    const parsed = events.map(e => ({
+      ...e,
+      tiers: e.tiers ? JSON.parse(e.tiers) : [],
+      customFormFields: undefined,
+      page_config: undefined,
+      smtp_config: undefined,
+      upi_config: undefined,
+    }));
+    res.status(200).json(parsed);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch public events.' });
+  }
+});
+
 // ===== GET SINGLE EVENT (public) =====
 router.get('/public/:id', async (req, res) => {
   try {
@@ -102,7 +123,7 @@ router.get('/public/:id', async (req, res) => {
 // ===== CREATE EVENT =====
 router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (req, res) => {
   try {
-    const { title, date_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config } = req.body;
+    const { title, date_time, end_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config } = req.body;
     
     if (!req.user.organization_id && req.user.role !== 'SYSTEM_ADMIN') {
       return res.status(400).json({ error: 'You must belong to an organization to create an event.' });
@@ -125,6 +146,7 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
         organization_id: req.user.organization_id,
         title: eventTitle,
         date_time: date_time ? new Date(date_time) : new Date(),
+        end_time: end_time ? new Date(end_time) : null,
         venue: venue || 'TBD',
         ticket_price: parseFloat(ticket_price) || 0,
         total_capacity: parseInt(total_capacity) || 100,
@@ -147,7 +169,7 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
 // ===== UPDATE EVENT =====
 router.put('/:id', verifyToken, requireEventAccess, async (req, res) => {
   try {
-    const { title, date_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config, upi_config } = req.body;
+    const { title, date_time, end_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config, upi_config } = req.body;
     
     if (title) {
       const eventToUpdate = await prisma.event.findUnique({ where: { id: req.params.id } });
@@ -168,7 +190,7 @@ router.put('/:id', verifyToken, requireEventAccess, async (req, res) => {
     const event = await prisma.event.update({
       where: { id: req.params.id },
       data: {
-        title, date_time: date_time ? new Date(date_time) : undefined, venue,
+        title, date_time: date_time ? new Date(date_time) : undefined, end_time: end_time !== undefined ? (end_time ? new Date(end_time) : null) : undefined, venue,
         ticket_price: parseFloat(ticket_price), total_capacity: parseInt(total_capacity),
         available_slots: parseInt(available_slots),
         image: image !== undefined ? image : undefined,

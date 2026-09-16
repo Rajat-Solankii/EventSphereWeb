@@ -1,9 +1,34 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AnimatedLanding() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
+
+  // Event fetching and categorization
+  const [allEvents, setAllEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:3000/api/v1/events/public/all')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setAllEvents(data))
+      .catch(() => setAllEvents([]))
+      .finally(() => setEventsLoading(false));
+  }, []);
+
+  const now = new Date();
+  const ongoingEvents = allEvents.filter(e => {
+    const start = new Date(e.date_time);
+    const end = e.end_time ? new Date(e.end_time) : new Date(start.getTime() + 24 * 60 * 60 * 1000); // default 24h
+    return start <= now && now <= end;
+  });
+  const upcomingEvents = allEvents.filter(e => new Date(e.date_time) > now);
+  const endedEvents = allEvents.filter(e => {
+    const start = new Date(e.date_time);
+    const end = e.end_time ? new Date(e.end_time) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+    return now > end;
+  });
 
   useEffect(() => {
     const video = videoRef.current;
@@ -137,32 +162,124 @@ export default function AnimatedLanding() {
 
       {/* Events Showcase Section */}
       <section id="events" className="relative z-20 bg-gray-50 py-32 px-6 border-y border-gray-100">
-        <div className="max-w-7xl mx-auto text-center">
-          <h2 className="text-4xl md:text-6xl font-serif text-black mb-6">
-            Featured Moments
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-4xl md:text-6xl font-serif text-black mb-6 text-center">
+            Discover Events
           </h2>
-          <p className="text-[#6F6F6F] max-w-2xl mx-auto mb-16">
-            A glimpse into the extraordinary experiences curated on our platform.
+          <p className="text-[#6F6F6F] max-w-2xl mx-auto mb-16 text-center">
+            Browse ongoing, upcoming, and past experiences curated on our platform.
           </p>
-          
-          <div className="grid md:grid-cols-2 gap-8">
-            <div 
-              className="aspect-[4/3] bg-gray-200 rounded-3xl overflow-hidden relative group"
-            >
-              <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale hover:grayscale-0" alt="Tech Conference" />
-              <div className="absolute inset-0 bg-black/40 flex items-end p-8">
-                <h3 className="text-white text-3xl font-serif">Global Tech Summit '26</h3>
-              </div>
+
+          {eventsLoading ? (
+            <div className="text-center text-gray-400 py-20 font-sans">Loading events...</div>
+          ) : (ongoingEvents.length === 0 && upcomingEvents.length === 0 && endedEvents.length === 0) ? (
+            <div className="text-center text-gray-400 py-20 font-sans">No events available yet.</div>
+          ) : (
+            <div className="space-y-20">
+              {/* Ongoing Events */}
+              {ongoingEvents.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-3 h-3 bg-black rounded-full animate-pulse" />
+                    <h3 className="text-2xl font-serif text-black">Ongoing Events</h3>
+                    <span className="text-xs font-mono bg-black text-white px-3 py-1 rounded-full">{ongoingEvents.length} LIVE</span>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {ongoingEvents.map(evt => (
+                      <div key={evt.id} onClick={() => navigate(`/register/${evt.id}`)} className="group cursor-pointer bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                        {evt.image ? (
+                          <div className="aspect-[16/9] overflow-hidden">
+                            <img src={evt.image} alt={evt.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          </div>
+                        ) : (
+                          <div className="aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <span className="text-5xl font-serif text-gray-300">{evt.title?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <h4 className="text-lg font-serif text-black mb-2 group-hover:underline">{evt.title}</h4>
+                          <p className="text-sm text-[#6F6F6F] font-sans">{evt.venue}</p>
+                          <p className="text-xs text-[#6F6F6F] font-mono mt-2">{new Date(evt.date_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Separator */}
+              {ongoingEvents.length > 0 && upcomingEvents.length > 0 && (
+                <hr className="border-gray-200" />
+              )}
+
+              {/* Upcoming Events */}
+              {upcomingEvents.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-3 h-3 bg-gray-400 rounded-full" />
+                    <h3 className="text-2xl font-serif text-black">Upcoming Events</h3>
+                    <span className="text-xs font-mono bg-gray-100 text-black px-3 py-1 rounded-full border border-gray-200">{upcomingEvents.length} SCHEDULED</span>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {upcomingEvents.map(evt => (
+                      <div key={evt.id} onClick={() => navigate(`/register/${evt.id}`)} className="group cursor-pointer bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-500">
+                        {evt.image ? (
+                          <div className="aspect-[16/9] overflow-hidden">
+                            <img src={evt.image} alt={evt.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          </div>
+                        ) : (
+                          <div className="aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <span className="text-5xl font-serif text-gray-300">{evt.title?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <h4 className="text-lg font-serif text-black mb-2 group-hover:underline">{evt.title}</h4>
+                          <p className="text-sm text-[#6F6F6F] font-sans">{evt.venue}</p>
+                          <p className="text-xs text-[#6F6F6F] font-mono mt-2">{new Date(evt.date_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Separator */}
+              {(ongoingEvents.length > 0 || upcomingEvents.length > 0) && endedEvents.length > 0 && (
+                <hr className="border-gray-200" />
+              )}
+
+              {/* Ended Events */}
+              {endedEvents.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-3 h-3 bg-gray-300 rounded-full" />
+                    <h3 className="text-2xl font-serif text-gray-400">Ended Events</h3>
+                    <span className="text-xs font-mono bg-gray-100 text-gray-400 px-3 py-1 rounded-full border border-gray-200">{endedEvents.length} PAST</span>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-60">
+                    {endedEvents.map(evt => (
+                      <div key={evt.id} className="group bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                        {evt.image ? (
+                          <div className="aspect-[16/9] overflow-hidden">
+                            <img src={evt.image} alt={evt.title} className="w-full h-full object-cover grayscale" />
+                          </div>
+                        ) : (
+                          <div className="aspect-[16/9] bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <span className="text-5xl font-serif text-gray-300">{evt.title?.charAt(0)}</span>
+                          </div>
+                        )}
+                        <div className="p-6">
+                          <h4 className="text-lg font-serif text-gray-500 mb-2">{evt.title}</h4>
+                          <p className="text-sm text-gray-400 font-sans">{evt.venue}</p>
+                          <p className="text-xs text-gray-400 font-mono mt-2">{new Date(evt.date_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <div 
-              className="aspect-[4/3] bg-gray-200 rounded-3xl overflow-hidden relative group"
-            >
-              <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=2000&auto=format&fit=crop" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 grayscale hover:grayscale-0" alt="Music Festival" />
-              <div className="absolute inset-0 bg-black/40 flex items-end p-8">
-                <h3 className="text-white text-3xl font-serif">Aurora Music Festival</h3>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 

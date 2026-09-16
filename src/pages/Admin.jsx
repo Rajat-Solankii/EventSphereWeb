@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { 
-  Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle, Loader
+  Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle, Loader, Clock
 } from 'lucide-react';
 import TemplateDesigner from '../components/TemplateDesigner';
 import { useAuth } from '../context/AuthContext';
@@ -417,6 +417,7 @@ function TransactionsView({ events, allAttendees }) {
   const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || 'all');
   const activeEvent = selectedEventId === 'all' ? null : (events.find(e => String(e.id) === String(selectedEventId)) || events[0]);
   const [transactions, setTransactions] = useState([]);
+  const [lightboxImage, setLightboxImage] = useState(null);
 
   useEffect(() => {
     try {
@@ -520,10 +521,10 @@ function TransactionsView({ events, allAttendees }) {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        <a href={txn.payment_screenshot} target="_blank" rel="noreferrer" className="inline-flex items-center space-x-1 text-sm font-medium text-theme-primary hover:text-theme-secondary transition-colors">
+                        <button onClick={() => setLightboxImage(txn.payment_screenshot)} className="inline-flex items-center space-x-1 text-sm font-medium text-theme-primary hover:text-theme-secondary transition-colors">
                           <ImageIcon className="w-4 h-4" />
                           <span>View</span>
-                        </a>
+                        </button>
                       </td>
                     </tr>
                   )
@@ -533,6 +534,17 @@ function TransactionsView({ events, allAttendees }) {
           </table>
         </div>
       </div>
+
+      {lightboxImage && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4 animate-in fade-in" onClick={() => setLightboxImage(null)}>
+          <div className="relative max-w-5xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setLightboxImage(null)} className="absolute -top-12 right-0 text-white hover:text-gray-300">
+              <X size={24} />
+            </button>
+            <img src={lightboxImage} alt="Payment Screenshot Preview" className="max-w-full max-h-[85vh] object-contain rounded-none border border-white/10 shadow-2xl" />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1011,7 +1023,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const [eventToDelete, setEventToDelete] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [formData, setFormData] = useState({
-    title: '', date: '', venue: '', image: '', currency: 'INR',
+    title: '', date: '', end_date: '', venue: '', image: '', currency: 'INR',
     tiers: [{ id: Date.now() + Math.random().toString(36).substr(2, 5), name: 'General Admission', price: '', capacity: '', template: null, _previewTicket: null }],
     customFormFields: []
   });
@@ -2153,6 +2165,51 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           </div>
         )}
 
+        {eventActiveTab === 'access_logs' && (
+          <div className="space-y-6">
+            <div className="glass-panel border border-gray-200 rounded-none overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-serif font-normal text-theme-text">Attendee Access Logs</h3>
+                  <p className="text-sm text-theme-text/60 mt-1">Detailed timestamps for check-in, temporary exits, re-entries, and permanent checkouts.</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                {eventAttendees.length === 0 ? (
+                  <div className="p-12 text-center text-theme-text/60">No attendees have registered for this event yet.</div>
+                ) : (
+                  <table className="w-full text-left text-sm text-theme-text/80">
+                    <thead className="text-xs text-theme-text/60 uppercase bg-theme-bg/50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4 font-sans font-medium">Pass ID</th>
+                        <th className="px-6 py-4 font-sans font-medium">Name</th>
+                        <th className="px-6 py-4 font-sans font-medium">Status</th>
+                        <th className="px-6 py-4 font-sans font-medium">In Time</th>
+                        <th className="px-6 py-4 font-sans font-medium">Temp Out</th>
+                        <th className="px-6 py-4 font-sans font-medium">Temp In</th>
+                        <th className="px-6 py-4 font-sans font-medium text-right">Out Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {eventAttendees.map((a, i) => (
+                        <tr key={i} className="border-b border-gray-200 hover:bg-theme-bg/20 transition-colors">
+                          <td className="px-6 py-4 font-mono text-black text-xs whitespace-nowrap">{a.passId}</td>
+                          <td className="px-6 py-4 font-serif font-normal text-theme-text whitespace-nowrap">{a.name}</td>
+                          <td className="px-6 py-4 text-xs font-medium whitespace-nowrap">{a.status}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-theme-text/70">{a.in_time ? new Date(a.in_time).toLocaleString() : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-theme-text/70">{a.temp_out_time ? new Date(a.temp_out_time).toLocaleString() : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-theme-text/70">{a.temp_in_time ? new Date(a.temp_in_time).toLocaleString() : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-theme-text/70">{a.out_time ? new Date(a.out_time).toLocaleString() : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Custom Mail Modal */}
         {customMailModal.isOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
@@ -2286,13 +2343,23 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-sans font-medium text-theme-text/80">Date & Time</label>
-              <input
-                type="datetime-local" required
-                value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })}
-                className="w-full bg-white/50 border border-gray-200 rounded-none px-4 py-3 text-theme-text focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-sans font-medium text-theme-text/80">Start Date & Time</label>
+                <input
+                  type="datetime-local" required
+                  value={formData.date} onChange={e => setFormData({ ...formData, date: e.target.value })}
+                  className="w-full bg-white/50 border border-gray-200 rounded-none px-4 py-3 text-theme-text focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-sans font-medium text-theme-text/80">End Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={formData.end_date} onChange={e => setFormData({ ...formData, end_date: e.target.value })}
+                  className="w-full bg-white/50 border border-gray-200 rounded-none px-4 py-3 text-theme-text focus:outline-none focus:border-black focus:ring-1 focus:ring-gray-500 transition-all"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -2518,8 +2585,21 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map(event => {
+      {(() => {
+        const now = new Date();
+        const ongoing = events.filter(e => {
+          const start = new Date(e.date);
+          const end = e.end_date ? new Date(e.end_date) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+          return start <= now && now <= end;
+        });
+        const upcoming = events.filter(e => new Date(e.date) > now);
+        const ended = events.filter(e => {
+          const start = new Date(e.date);
+          const end = e.end_date ? new Date(e.end_date) : new Date(start.getTime() + 24 * 60 * 60 * 1000);
+          return now > end;
+        });
+
+        const renderEventCard = (event) => {
           const stats = getEventStats(event);
           const pageConfig = event.page_config ? (typeof event.page_config === 'string' ? JSON.parse(event.page_config) : event.page_config) : {};
           const currencySymbol = pageConfig.currency === 'USD' ? '$' : pageConfig.currency === 'EUR' ? '€' : pageConfig.currency === 'GBP' ? '£' : '₹';
@@ -2544,8 +2624,68 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               </div>
             </div>
           );
-        })}
-      </div>
+        };
+
+        return (
+          <div className="space-y-10">
+            {/* Ongoing Events */}
+            {ongoing.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-2.5 h-2.5 bg-black rounded-full animate-pulse" />
+                  <h3 className="text-lg font-serif font-normal text-theme-text">Ongoing Events</h3>
+                  <span className="text-[10px] font-mono bg-black text-white px-2.5 py-0.5 rounded-full tracking-wider">{ongoing.length} LIVE</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {ongoing.map(renderEventCard)}
+                </div>
+              </div>
+            )}
+
+            {/* Separator */}
+            {ongoing.length > 0 && upcoming.length > 0 && (
+              <hr className="border-gray-200" />
+            )}
+
+            {/* Upcoming Events */}
+            {upcoming.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
+                  <h3 className="text-lg font-serif font-normal text-theme-text">Upcoming Events</h3>
+                  <span className="text-[10px] font-mono bg-gray-100 text-black px-2.5 py-0.5 rounded-full border border-gray-200 tracking-wider">{upcoming.length} SCHEDULED</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {upcoming.map(renderEventCard)}
+                </div>
+              </div>
+            )}
+
+            {/* Separator */}
+            {(ongoing.length > 0 || upcoming.length > 0) && ended.length > 0 && (
+              <hr className="border-gray-200" />
+            )}
+
+            {/* Ended Events */}
+            {ended.length > 0 && (
+              <div>
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-2.5 h-2.5 bg-gray-300 rounded-full" />
+                  <h3 className="text-lg font-serif font-normal text-gray-400">Ended Events</h3>
+                  <span className="text-[10px] font-mono bg-gray-100 text-gray-400 px-2.5 py-0.5 rounded-full border border-gray-200 tracking-wider">{ended.length} PAST</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-50">
+                  {ended.map(renderEventCard)}
+                </div>
+              </div>
+            )}
+
+            {events.length === 0 && (
+              <div className="text-center text-theme-text/50 py-16 font-sans">No events created yet.</div>
+            )}
+          </div>
+        );
+      })()}
       <AIChatModal isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} onEventReady={handleAIEventReady} />
     </div>
   );
@@ -2608,7 +2748,8 @@ function AdminDashboardInner() {
           ...e,
           capacity: e.total_capacity,
           available: e.available_slots,
-          date: new Date(e.date_time).toISOString().slice(0, 16)
+          date: new Date(e.date_time).toISOString().slice(0, 16),
+          end_date: e.end_time ? new Date(e.end_time).toISOString().slice(0, 16) : ''
         }));
         setEvents(mapped);
       }
@@ -2701,6 +2842,7 @@ function AdminDashboardInner() {
     setFormData({
       title: event.title,
       date: event.date,
+      end_date: event.end_date || '',
       venue: event.venue,
       capacity: event.capacity,
       image: event.image,
@@ -2716,6 +2858,7 @@ function AdminDashboardInner() {
       const payload = {
         title: newEvent.title,
         date_time: new Date(newEvent.date).toISOString(),
+        end_time: newEvent.end_date ? new Date(newEvent.end_date).toISOString() : null,
         venue: newEvent.venue,
         ticket_price: parseFloat(newEvent.tiers?.[0]?.price || 0),
         total_capacity: parseInt(newEvent.capacity || 100),
@@ -2742,6 +2885,7 @@ function AdminDashboardInner() {
       const payload = {
         title: updatedEvent.title,
         date_time: new Date(updatedEvent.date).toISOString(),
+        end_time: updatedEvent.end_date ? new Date(updatedEvent.end_date).toISOString() : null,
         venue: updatedEvent.venue,
         ticket_price: parseFloat(updatedEvent.tiers?.[0]?.price || 0),
         total_capacity: parseInt(updatedEvent.capacity || 100),
@@ -2809,6 +2953,7 @@ function AdminDashboardInner() {
                 <NavItem icon={<CreditCard size={18} />} label="Payment / UPI Config" active={eventActiveTab === 'payment'} onClick={() => setEventActiveTab('payment')} />
                 <NavItem icon={<MessageSquare size={18} />} label="Broadcast Message" active={eventActiveTab === 'broadcast'} onClick={() => setEventActiveTab('broadcast')} />
                 <NavItem icon={<Users size={18} />} label="Participant List" active={eventActiveTab === 'participants'} onClick={() => setEventActiveTab('participants')} />
+                <NavItem icon={<Clock size={18} />} label="Access Logs" active={eventActiveTab === 'access_logs'} onClick={() => setEventActiveTab('access_logs')} />
               </>
             ) : (
               <>
