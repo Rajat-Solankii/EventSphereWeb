@@ -646,7 +646,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
               <MessageSquare className="w-5 h-5 text-black" />
               AI Event Creator
             </h3>
-            <p className="text-xs text-theme-text/60 mt-1">Powered by Groq</p>
+            <p className="text-xs text-theme-text/60 mt-1">Powered by Gemini</p>
           </div>
           <button type="button" onClick={onClose} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
             <X className="w-5 h-5" />
