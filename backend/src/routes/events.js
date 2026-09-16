@@ -108,10 +108,22 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
       return res.status(400).json({ error: 'You must belong to an organization to create an event.' });
     }
 
+    const eventTitle = title || 'New Event';
+    const existingEvent = await prisma.event.findFirst({
+      where: {
+        title: eventTitle,
+        organization_id: req.user.organization_id
+      }
+    });
+
+    if (existingEvent) {
+      return res.status(400).json({ error: 'An event with this name already exists.' });
+    }
+
     const event = await prisma.event.create({
       data: {
         organization_id: req.user.organization_id,
-        title: title || 'New Event',
+        title: eventTitle,
         date_time: date_time ? new Date(date_time) : new Date(),
         venue: venue || 'TBD',
         ticket_price: parseFloat(ticket_price) || 0,
@@ -136,6 +148,23 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
 router.put('/:id', verifyToken, requireEventAccess, async (req, res) => {
   try {
     const { title, date_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config, upi_config } = req.body;
+    
+    if (title) {
+      const eventToUpdate = await prisma.event.findUnique({ where: { id: req.params.id } });
+      if (eventToUpdate) {
+        const existingEvent = await prisma.event.findFirst({
+          where: {
+            title: title,
+            organization_id: eventToUpdate.organization_id,
+            id: { not: req.params.id }
+          }
+        });
+        if (existingEvent) {
+          return res.status(400).json({ error: 'An event with this name already exists.' });
+        }
+      }
+    }
+
     const event = await prisma.event.update({
       where: { id: req.params.id },
       data: {
