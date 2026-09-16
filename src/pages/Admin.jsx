@@ -1536,6 +1536,46 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300 relative">
+        {showDeleteModal && eventToDelete && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
+            <div className="relative bg-white border border-rose-500/20 rounded-xl w-full max-w-md shadow-2xl p-6 animate-in zoom-in-95 duration-200">
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center space-x-3 text-rose-500">
+                  <Shield className="w-6 h-6" />
+                  <h3 className="text-xl font-bold">Delete Event</h3>
+                </div>
+                <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="bg-rose-500/10 text-rose-700 p-4 rounded-lg mb-6 text-sm font-medium">
+                This action is irreversible. All registrations, tickets, and configurations for this event will be permanently destroyed.
+              </div>
+              <p className="text-sm text-theme-text mb-2">
+                Please type <span className="font-bold select-all bg-gray-100 px-1 rounded">{eventToDelete.title}</span> to confirm.
+              </p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full bg-white border border-rose-300 focus:border-rose-500 rounded-lg px-4 py-2.5 text-theme-text text-sm focus:outline-none mb-6 font-mono"
+                placeholder={eventToDelete.title}
+              />
+              <button
+                disabled={deleteConfirmText !== eventToDelete.title}
+                onClick={() => {
+                  onDeleteEvent(eventToDelete.id);
+                  setViewingEventId(null);
+                  setShowDeleteModal(false);
+                }}
+                className="w-full py-2.5 rounded-lg font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-500/20"
+              >
+                I understand the consequences, delete this event
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -2427,46 +2467,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           />,
           document.body
         )}
-        {showDeleteModal && eventToDelete && (
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
-            <div className="relative bg-white border border-rose-500/20 rounded-xl w-full max-w-md shadow-2xl p-6 animate-in zoom-in-95 duration-200">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex items-center space-x-3 text-rose-500">
-                  <Shield className="w-6 h-6" />
-                  <h3 className="text-xl font-bold">Delete Event</h3>
-                </div>
-                <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="bg-rose-500/10 text-rose-700 p-4 rounded-lg mb-6 text-sm font-medium">
-                This action is irreversible. All registrations, tickets, and configurations for this event will be permanently destroyed.
-              </div>
-              <p className="text-sm text-theme-text mb-2">
-                Please type <span className="font-bold select-all bg-gray-100 px-1 rounded">{eventToDelete.title}</span> to confirm.
-              </p>
-              <input
-                type="text"
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className="w-full bg-white border border-rose-300 focus:border-rose-500 rounded-lg px-4 py-2.5 text-theme-text text-sm focus:outline-none mb-6 font-mono"
-                placeholder={eventToDelete.title}
-              />
-              <button
-                disabled={deleteConfirmText !== eventToDelete.title}
-                onClick={() => {
-                  onDeleteEvent(eventToDelete.id);
-                  setViewingEventId(null);
-                  setShowDeleteModal(false);
-                }}
-                className="w-full py-2.5 rounded-lg font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-500/20"
-              >
-                I understand the consequences, delete this event
-              </button>
-            </div>
-          </div>
-        )}
+
         <AIChatModal isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} onEventReady={handleAIEventReady} />
       </div>
     );
