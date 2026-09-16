@@ -112,7 +112,8 @@ export default function LoginPage({ onNavigate }) {
       
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-10 flex flex-col items-center justify-center">
+          <img src="/logo.png" alt="EventSphere Logo" className="w-32 h-32 mb-4 object-contain" />
           <h1 className="text-4xl sm:text-5xl font-normal font-serif text-black tracking-tight" style={{ letterSpacing: '-1.5px' }}>
             EventSphere<sup className="text-xl">®</sup>
           </h1>

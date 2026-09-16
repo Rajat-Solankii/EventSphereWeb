@@ -618,7 +618,7 @@ app.post('/api/tickets/:id/scan', async (req, res) => {
     if (!ticket) return res.status(404).json({ success: false, message: 'Invalid Ticket' });
     if (ticket.status === 'INSIDE') return res.status(200).json({ success: false, message: 'Already Admitted' });
     await prisma.$transaction([
-      prisma.ticket.update({ where: { id: req.params.id }, data: { status: 'INSIDE' } }),
+      prisma.ticket.update({ where: { id: req.params.id }, data: { status: 'INSIDE', in_time: new Date() } }),
       prisma.attendanceLog.create({ data: { ticket_id: req.params.id, action_type: 'ENTRY', roll_number: ticket.student_roll_no } })
     ]);
     res.status(200).json({ success: true, message: 'Admitted Successfully' });
@@ -647,7 +647,7 @@ app.post('/api/v1/tickets/scan', async (req, res) => {
 
       switch (ticket.status) {
         case 'OUTSIDE':
-          await tx.ticket.update({ where: { id: ticketId }, data: { status: 'INSIDE' } });
+          await tx.ticket.update({ where: { id: ticketId }, data: { status: 'INSIDE', in_time: new Date() } });
           await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'ENTRY', roll_number: ticket.student_roll_no } });
           return { success: true, status: 'INSIDE', message: 'Access Granted. Welcome!', attendee: attendeeData };
         case 'INSIDE':
@@ -662,6 +662,9 @@ app.post('/api/v1/tickets/scan', async (req, res) => {
         case 'DECLINED':
           await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'DENIED', roll_number: ticket.student_roll_no } });
           return { success: false, status: 'DECLINED', message: 'Ticket payment was declined.', attendee: attendeeData };
+        case 'CHECKED_OUT':
+          await tx.attendanceLog.create({ data: { ticket_id: ticketId, action_type: 'DENIED', roll_number: ticket.student_roll_no } });
+          return { success: false, status: 'CHECKED_OUT', message: 'Ticket already checked out permanently.', attendee: attendeeData };
         default: throw new Error('Unknown status');
       }
     });
@@ -682,7 +685,7 @@ app.post('/api/v1/tickets/:id/temp-exit', async (req, res) => {
       if (!ticket) throw new Error('Ticket not found');
       if (ticket.status !== 'INSIDE') throw new Error('User is not inside.');
       
-      await tx.ticket.update({ where: { id }, data: { status: 'TEMPORARY_OUT', exit_image } });
+      await tx.ticket.update({ where: { id }, data: { status: 'TEMPORARY_OUT', exit_image, temp_out_time: new Date() } });
       await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'TEMPORARY_EXIT', roll_number: ticket.student_roll_no, captured_photo_url: exit_image } });
       return { success: true, message: 'User marked as temporarily out.' };
     });
@@ -702,7 +705,7 @@ app.post('/api/v1/tickets/:id/re-enter', async (req, res) => {
       if (!ticket) throw new Error('Ticket not found');
       if (ticket.status !== 'TEMPORARY_OUT') throw new Error('User is not temporarily out.');
       
-      await tx.ticket.update({ where: { id }, data: { status: 'INSIDE', exit_image: null } });
+      await tx.ticket.update({ where: { id }, data: { status: 'INSIDE', exit_image: null, temp_in_time: new Date() } });
       await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'RE_ENTRY', roll_number: ticket.student_roll_no } });
       return { success: true, message: 'Access Granted. Welcome back!' };
     });
@@ -710,6 +713,26 @@ app.post('/api/v1/tickets/:id/re-enter', async (req, res) => {
   } catch (err) {
     if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
     if (err.message === 'User is not temporarily out.') return res.status(400).json({ success: false, message: err.message });
+    res.status(500).json({ success: false, message: 'Internal Server Error' });
+  }
+});
+
+app.post('/api/v1/tickets/:id/checkout', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const ticket = await tx.ticket.findUnique({ where: { id } });
+      if (!ticket) throw new Error('Ticket not found');
+      if (ticket.status !== 'INSIDE' && ticket.status !== 'TEMPORARY_OUT') throw new Error('User is not inside.');
+      
+      await tx.ticket.update({ where: { id }, data: { status: 'CHECKED_OUT', out_time: new Date() } });
+      await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'CHECKOUT', roll_number: ticket.student_roll_no } });
+      return { success: true, message: 'User checked out permanently.' };
+    });
+    res.status(200).json(result);
+  } catch (err) {
+    if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
+    if (err.message === 'User is not inside.') return res.status(400).json({ success: false, message: err.message });
     res.status(500).json({ success: false, message: 'Internal Server Error' });
   }
 });

@@ -2787,9 +2787,7 @@ function AdminDashboardInner() {
         <div className="h-full w-full bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex flex-col overflow-hidden">
           <div className="p-6 border-b border-gray-100 bg-theme-bg/20">
             <div className="flex items-center space-x-3 text-theme-text">
-              <div className="w-8 h-8 rounded-sm bg-black/20 border border-black/30 flex items-center justify-center shadow-[0_0_15px_rgba(99,102,241,0.2)]">
-                <Settings className="w-4 h-4 text-black" />
-              </div>
+              <img src="/logo.png" alt="EventSphere Logo" className="w-12 h-12 object-contain" />
               <span className="font-serif font-normal text-lg tracking-tight">EventSphere</span>
             </div>
           </div>

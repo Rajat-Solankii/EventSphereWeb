@@ -116,6 +116,10 @@ model Ticket {
   payment_screenshot String?
   exit_image      String?
   status          String   @default("OUTSIDE")
+  in_time         DateTime?
+  temp_out_time   DateTime?
+  temp_in_time    DateTime?
+  out_time        DateTime?
   created_at      DateTime @default(now())
 
   event           Event          @relation(fields: [event_id], references: [id])

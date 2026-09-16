@@ -70,8 +70,9 @@ export default function AnimatedLanding() {
 
       {/* Navigation Bar */}
       <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <div className="font-serif text-3xl tracking-tight text-black">
-          EventSphere<sup>®</sup>
+        <div className="font-serif text-3xl tracking-tight text-black flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain -ml-2" />
+          <span>EventSphere<sup>®</sup></span>
         </div>
         <div className="hidden md:flex space-x-8 text-sm font-sans">
           <a href="#home" className="text-black transition-colors">Home</a>
@@ -181,8 +182,11 @@ export default function AnimatedLanding() {
             Start Building
           </button>
         </div>
-        <div className="mt-32 pt-8 border-t border-gray-800 text-gray-500 text-sm font-sans flex justify-between max-w-7xl mx-auto">
-          <span>© 2026 EventSphere. All rights reserved.</span>
+        <div className="mt-32 pt-8 border-t border-gray-800 text-gray-500 text-sm font-sans flex flex-col sm:flex-row gap-4 justify-between max-w-7xl mx-auto items-center">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="w-5 h-5 opacity-50 grayscale" />
+            <span>© 2026 EventSphere. All rights reserved.</span>
+          </div>
           <div className="space-x-6">
             <a href="#" className="hover:text-white transition-colors">Twitter</a>
             <a href="#" className="hover:text-white transition-colors">LinkedIn</a>
