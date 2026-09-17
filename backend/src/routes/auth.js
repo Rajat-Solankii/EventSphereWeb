@@ -2,13 +2,17 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { v4: uuidv4 } = require('uuid');
 const { PrismaClient } = require('@prisma/client');
 const nodemailer = require('nodemailer');
 const { authLimiter, emailLimiter } = require('../middleware/rateLimit');
 const { verifyToken } = require('../middleware/auth');
 
 const prisma = new PrismaClient();
+
+// ===== HELPERS =====
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 // ===== HELPERS =====
 
@@ -50,11 +54,10 @@ function getSmtpTransporter() {
   return null;
 }
 
-async function sendVerificationEmail(user, token) {
+async function sendVerificationEmail(user, otp) {
   const transporter = getSmtpTransporter();
   if (!transporter) return;
 
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
   const from = process.env.SMTP_FROM || `"EventSphere" <${process.env.SMTP_USER}>`;
 
   await transporter.sendMail({
@@ -69,15 +72,13 @@ async function sendVerificationEmail(user, token) {
         </div>
         <div style="padding:40px;">
           <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${user.name}</strong>,</p>
-          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">You've been invited to join EventSphere. Click the button below to verify your email address and activate your account.</p>
-          <div style="margin:32px 0;">
-            <a href="${verifyUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:12px 28px;border-radius:4px;">Verify My Email Address</a>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">You've been invited to join EventSphere. Use the one-time code below to verify your email address and activate your account.</p>
+          
+          <div style="background:#fafafa;border-radius:8px;padding:24px;margin-bottom:32px;border:1px solid #e5e5e5;text-align:center;">
+            <h1 style="color:#000000;margin:0;font-size:42px;letter-spacing:12px;font-weight:700;padding-left:12px;font-family:monospace;">${otp}</h1>
           </div>
-          <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;padding:16px;margin-top:24px;">
-            <p style="margin:0;color:#666666;font-size:13px;">Or paste this link into your browser:</p>
-            <p style="margin:8px 0 0;font-family:monospace;color:#000000;font-size:12px;word-break:break-all;">${verifyUrl}</p>
-          </div>
-          <p style="color:#666666;font-size:13px;margin:24px 0 0;">This link expires in <strong>24 hours</strong>. If you didn't request this, you can safely ignore this email.</p>
+
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">This code expires in <strong>24 hours</strong>. If you didn't request this, you can safely ignore this email.</p>
         </div>
         <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
           <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
@@ -87,11 +88,10 @@ async function sendVerificationEmail(user, token) {
   });
 }
 
-async function sendPasswordResetEmail(user, token) {
+async function sendPasswordResetEmail(user, otp) {
   const transporter = getSmtpTransporter();
   if (!transporter) return;
 
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
   const from = process.env.SMTP_FROM || `"EventSphere" <${process.env.SMTP_USER}>`;
 
   await transporter.sendMail({
@@ -106,15 +106,42 @@ async function sendPasswordResetEmail(user, token) {
         </div>
         <div style="padding:40px;">
           <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${user.name}</strong>,</p>
-          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">Click the button below to choose a new password. If you didn't request this, you can safely ignore this email.</p>
-          <div style="margin:32px 0;">
-            <a href="${resetUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;font-size:14px;font-weight:500;padding:12px 28px;border-radius:4px;">Reset My Password</a>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">Use the one-time code below to choose a new password. If you didn't request this, you can safely ignore this email.</p>
+          
+          <div style="background:#fafafa;border-radius:8px;padding:24px;margin-bottom:32px;border:1px solid #e5e5e5;text-align:center;">
+            <h1 style="color:#000000;margin:0;font-size:42px;letter-spacing:12px;font-weight:700;padding-left:12px;font-family:monospace;">${otp}</h1>
           </div>
-          <div style="background:#fafafa;border:1px solid #e5e5e5;border-radius:4px;padding:16px;margin-top:24px;">
-            <p style="margin:0;color:#666666;font-size:13px;">Or paste this link into your browser:</p>
-            <p style="margin:8px 0 0;font-family:monospace;color:#000000;font-size:12px;word-break:break-all;">${resetUrl}</p>
-          </div>
-          <p style="color:#666666;font-size:13px;margin:24px 0 0;">This link expires in <strong>1 hour</strong>.</p>
+
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">This code expires in <strong>1 hour</strong>.</p>
+        </div>
+        <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+          <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
+        </div>
+      </div>
+    `
+  });
+}
+
+async function sendAccountDeletionEmail(userEmail, userName) {
+  const transporter = getSmtpTransporter();
+  if (!transporter) return;
+
+  const from = process.env.SMTP_FROM || `"EventSphere" <${process.env.SMTP_USER}>`;
+
+  await transporter.sendMail({
+    from,
+    to: userEmail,
+    subject: '👋 Your EventSphere Account Has Been Deleted',
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+        <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+          <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Account Deleted</h1>
+          <p style="margin:8px 0 0;color:#666666;font-size:15px;">We're sorry to see you go.</p>
+        </div>
+        <div style="padding:40px;">
+          <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${userName}</strong>,</p>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">This email is to confirm that your EventSphere account has been successfully deleted.</p>
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">If you ever wish to return, you can always create a new account.</p>
         </div>
         <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
           <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
@@ -142,7 +169,7 @@ router.post('/register', authLimiter, async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
-    const verificationToken = uuidv4();
+    const verificationToken = generateOTP();
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const user = await prisma.user.create({
@@ -616,6 +643,7 @@ router.delete('/me', require('../middleware/auth').verifyToken, async (req, res)
       if (otherAdmins === 0) {
         await prisma.organization.delete({ where: { id: user.organization_id } });
         res.clearCookie('refresh_token');
+        sendAccountDeletionEmail(user.email, user.name).catch(() => {});
         return res.status(200).json({ success: true, message: 'Account and organization deleted successfully.' });
       }
     }
@@ -625,6 +653,7 @@ router.delete('/me', require('../middleware/auth').verifyToken, async (req, res)
     await prisma.user.delete({ where: { id: userId } });
     
     res.clearCookie('refresh_token');
+    sendAccountDeletionEmail(user.email, user.name).catch(() => {});
     return res.status(200).json({ success: true, message: 'Account deleted successfully.' });
   } catch (err) {
     console.error('Delete own account error:', err);
@@ -633,22 +662,30 @@ router.delete('/me', require('../middleware/auth').verifyToken, async (req, res)
 });
 
 // ===== VERIFY EMAIL =====
-// GET /api/auth/verify-email?token=TOKEN
-router.get('/verify-email', async (req, res) => {
+// POST /api/auth/verify-email
+router.post('/verify-email', authLimiter, async (req, res) => {
   try {
-    const { token } = req.query;
-    if (!token) {
-      return res.redirect(`${process.env.FRONTEND_URL}/login?error=missing_token`);
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { verification_token: token } });
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
 
     if (!user) {
-      return res.redirect(`${process.env.FRONTEND_URL}/login?error=invalid_token`);
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    if (user.is_verified) {
+      return res.status(200).json({ success: true, message: 'Email is already verified.' });
+    }
+
+    if (user.verification_token !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid or incorrect code.' });
     }
 
     if (user.verification_expires_at < new Date()) {
-      return res.redirect(`${process.env.FRONTEND_URL}/login?error=token_expired&email=${encodeURIComponent(user.email)}`);
+      return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
     }
 
     await prisma.user.update({
@@ -657,10 +694,10 @@ router.get('/verify-email', async (req, res) => {
     });
 
     console.log(`✅ Email verified for ${user.email}`);
-    return res.redirect(`${process.env.FRONTEND_URL}/login?verified=true`);
+    return res.status(200).json({ success: true, message: 'Email verified successfully. You can now log in.' });
   } catch (err) {
     console.error('Email verification error:', err);
-    return res.redirect(`${process.env.FRONTEND_URL}/login?error=server_error`);
+    return res.status(500).json({ success: false, message: 'Failed to verify email.' });
   }
 });
 
@@ -678,7 +715,7 @@ router.post('/resend-verification', emailLimiter, async (req, res) => {
       return res.status(200).json({ success: true, message: 'If that account exists and is unverified, a new link has been sent.' });
     }
 
-    const verificationToken = uuidv4();
+    const verificationToken = generateOTP();
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await prisma.user.update({
@@ -711,7 +748,7 @@ router.post('/forgot-password', emailLimiter, async (req, res) => {
       return res.status(403).json({ success: false, message: 'This account has been deactivated.' });
     }
 
-    const resetToken = uuidv4();
+    const resetToken = generateOTP();
     const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
     await prisma.user.update({
@@ -734,18 +771,26 @@ router.post('/forgot-password', emailLimiter, async (req, res) => {
 // POST /api/auth/reset-password
 router.post('/reset-password', authLimiter, async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      return res.status(400).json({ success: false, message: 'Token and new password are required.' });
+    const { email, otp, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ success: false, message: 'Email, OTP, and new password are required.' });
     }
     if (newPassword.length < 8) {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { password_reset_token: token } });
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
 
-    if (!user || user.password_reset_expires < new Date()) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired password reset token.' });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Account not found.' });
+    }
+
+    if (user.password_reset_token !== otp) {
+      return res.status(400).json({ success: false, message: 'Invalid or incorrect code.' });
+    }
+
+    if (user.password_reset_expires < new Date()) {
+      return res.status(400).json({ success: false, message: 'Code has expired. Please request a new reset.' });
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);

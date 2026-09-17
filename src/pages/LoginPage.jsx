@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const API = 'http://localhost:3000';
 
 export default function LoginPage({ onNavigate }) {
   const { login, register, forgotPassword } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState('login'); // 'login' | 'register' | 'forgot_password'
   const [form, setForm] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
@@ -60,17 +61,13 @@ export default function LoginPage({ onNavigate }) {
       } else if (tab === 'register') {
         const result = await register(form.name, form.email, form.password);
         if (result.requiresVerification) {
-          setInfo(`📧 Check your inbox at ${form.email} — we've sent a verification link. Click it to activate your account. (Please also check your spam folder)`);
-          setTab('login');
-          setForm(f => ({ ...f, password: '', confirmPassword: '' }));
+          navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
         } else {
           await login(form.email, form.password);
         }
       } else if (tab === 'forgot_password') {
         await forgotPassword(form.email);
-        setInfo(`📧 A password reset link has been sent to ${form.email}.`);
-        setTab('login');
-        setForm(f => ({ ...f, password: '', confirmPassword: '' }));
+        navigate(`/reset-password?email=${encodeURIComponent(form.email)}`);
       }
     } catch (err) {
       const msg = err.message || 'Something went wrong.';
@@ -231,7 +228,7 @@ export default function LoginPage({ onNavigate }) {
                 disabled={loading}
                 className="w-full bg-black text-white font-sans py-4 text-sm tracking-wide font-medium hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed mt-4"
               >
-                {loading ? 'Processing...' : tab === 'login' ? 'Sign In' : tab === 'register' ? 'Create Account' : 'Send Reset Link'}
+                {loading ? 'Processing...' : tab === 'login' ? 'Sign In' : tab === 'register' ? 'Create Account' : 'Send Reset Code'}
               </button>
 
               {tab === 'forgot_password' && (

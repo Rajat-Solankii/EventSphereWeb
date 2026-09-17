@@ -1686,18 +1686,24 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {eventActiveTab === 'smtp' && (
           <div className="space-y-8">
             <form onSubmit={handleSmtpSave} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
-              <div>
+              <div className="mb-6">
                 <h3 className="text-xl font-serif font-normal text-theme-text mb-2">SMTP Configuration</h3>
                 <p className="text-theme-text/60">Configure custom email settings to send tickets from your own domain instead of the default platform address.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setSmtpForm({ host: 'smtp.gmail.com', port: '587', user: 'rajatsolanki1210@gmail.com', pass: '', fromEmail: '"Tech Event 2026" <info@techevent.com>' })}
-                className="px-4 py-2 bg-gray-100 text-black hover:bg-black/20 rounded-sm text-sm font-serif font-normal transition-all whitespace-nowrap border border-gray-200"
-              >
-                ⚡ Autofill Default
-              </button>
+
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 text-sm text-blue-900 rounded-r-md">
+              <h4 className="font-semibold mb-2 flex items-center gap-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                How to set up Gmail SMTP
+              </h4>
+              <ol className="list-decimal list-inside space-y-1 ml-1">
+                <li>Go to your Google Account Settings &gt; Security.</li>
+                <li>Enable <strong>2-Step Verification</strong> if not already enabled.</li>
+                <li>Search for "App passwords" in your Google Account settings.</li>
+                <li>Create a new App Password and name it "EventSphere".</li>
+                <li>Use <code className="bg-blue-100 px-1 py-0.5 rounded">smtp.gmail.com</code> for Host and <code className="bg-blue-100 px-1 py-0.5 rounded">587</code> for Port.</li>
+                <li>Enter the generated 16-character App Password below.</li>
+              </ol>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

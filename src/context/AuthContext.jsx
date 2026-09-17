@@ -99,11 +99,23 @@ export function AuthProvider({ children }) {
   };
 
   // ===== Reset Password =====
-  const resetPassword = async (token, newPassword) => {
+  const resetPassword = async (email, otp, newPassword) => {
     const res = await fetch(`${API}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token, newPassword })
+      body: JSON.stringify({ email, otp, newPassword })
+    });
+    const data = await res.json();
+    if (!data.success) throw { status: res.status, ...data };
+    return data;
+  };
+
+  // ===== Verify Email OTP =====
+  const verifyEmail = async (email, otp) => {
+    const res = await fetch(`${API}/api/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
     });
     const data = await res.json();
     if (!data.success) throw { status: res.status, ...data };
@@ -177,6 +189,7 @@ export function AuthProvider({ children }) {
       isAuthenticated: !!user,
       forgotPassword,
       resetPassword,
+      verifyEmail,
       updateUser
     }}>
       {children}
