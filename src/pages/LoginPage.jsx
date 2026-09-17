@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -106,6 +106,12 @@ export default function LoginPage({ onNavigate }) {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <button 
+        onClick={() => navigate('/')} 
+        className="absolute top-8 left-8 sm:top-12 sm:left-12 flex items-center gap-2 text-sm font-medium text-[#6F6F6F] hover:text-black transition-colors z-20"
+      >
+        <ArrowLeft size={16} /> Back to Home
+      </button>
       
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}

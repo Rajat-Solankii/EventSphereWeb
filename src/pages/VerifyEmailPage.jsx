@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const API = 'http://localhost:3000';
 
@@ -69,6 +70,12 @@ export default function VerifyEmailPage() {
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      <button 
+        onClick={() => navigate('/')} 
+        className="absolute top-8 left-8 sm:top-12 sm:left-12 flex items-center gap-2 text-sm font-medium text-[#6F6F6F] hover:text-black transition-colors z-20"
+      >
+        <ArrowLeft size={16} /> Back to Home
+      </button>
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-10 flex flex-col items-center justify-center">
           <img src="/logo.png" alt="EventSphere Logo" className="w-32 h-32 mb-4 object-contain" />
