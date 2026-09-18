@@ -163,7 +163,7 @@ router.post('/register', authLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
     }
 
-    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
     if (existing) {
       return res.status(409).json({ success: false, message: 'An account with this email already exists.' });
     }
@@ -172,29 +172,33 @@ router.post('/register', authLimiter, async (req, res) => {
     const verificationToken = generateOTP();
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const user = await prisma.user.create({
-      data: {
-        name: name.trim(),
-        email: email.toLowerCase().trim(),
-        password: hashedPassword,
-        role: 'ORG_ADMIN',
+    const metaData = JSON.stringify({
+      name: name.trim(),
+      password: hashedPassword
+    });
+
+    await prisma.otpVerification.upsert({
+      where: { email: email.toLowerCase().trim() },
+      update: {
+        otp: verificationToken,
+        expires_at: verificationExpiry,
         is_verified: false,
-        verification_token: verificationToken,
-        verification_expires_at: verificationExpiry,
-        organization: {
-          create: {
-            name: `${name.trim()}'s Organization`
-          }
-        }
+        meta_data: metaData
+      },
+      create: {
+        email: email.toLowerCase().trim(),
+        otp: verificationToken,
+        expires_at: verificationExpiry,
+        is_verified: false,
+        meta_data: metaData
       }
     });
 
     // Send verification email (non-blocking)
-    if (verificationToken) {
-      sendVerificationEmail(user, verificationToken).catch(err =>
-        console.error('Verification email failed:', err.message)
-      );
-    }
+    const userForEmail = { name: name.trim(), email: email.toLowerCase().trim() };
+    sendVerificationEmail(userForEmail, verificationToken).catch(err =>
+      console.error('Verification email failed:', err.message)
+    );
 
     return res.status(201).json({
       success: true,
@@ -670,30 +674,57 @@ router.post('/verify-email', authLimiter, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email and OTP are required.' });
     }
 
-    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+    const otpRecord = await prisma.otpVerification.findUnique({ where: { email: email.toLowerCase().trim() } });
 
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'Account not found.' });
+    if (!otpRecord) {
+      return res.status(404).json({ success: false, message: 'Verification record not found. Please register again.' });
     }
 
-    if (user.is_verified) {
-      return res.status(200).json({ success: true, message: 'Email is already verified.' });
-    }
-
-    if (user.verification_token !== otp) {
+    if (otpRecord.otp !== otp) {
       return res.status(400).json({ success: false, message: 'Invalid or incorrect code.' });
     }
 
-    if (user.verification_expires_at < new Date()) {
+    if (otpRecord.expires_at < new Date()) {
       return res.status(400).json({ success: false, message: 'Code has expired. Please request a new one.' });
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { is_verified: true, verification_token: null, verification_expires_at: null }
-    });
+    // Now create the actual User if it was a registration
+    if (otpRecord.meta_data) {
+      try {
+        const parsedMeta = JSON.parse(otpRecord.meta_data);
+        if (parsedMeta.name && parsedMeta.password) {
+          await prisma.user.create({
+            data: {
+              name: parsedMeta.name,
+              email: otpRecord.email,
+              password: parsedMeta.password,
+              role: 'ORG_ADMIN',
+              is_verified: true,
+              organization: {
+                create: {
+                  name: `${parsedMeta.name}'s Organization`
+                }
+              }
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Failed to parse meta_data during verification:', e);
+      }
+    } else {
+      // This might be a normal verify email where the user already exists (legacy fallback)
+      const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+      if (user && !user.is_verified) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { is_verified: true, verification_token: null, verification_expires_at: null }
+        });
+      }
+    }
 
-    console.log(`✅ Email verified for ${user.email}`);
+    await prisma.otpVerification.delete({ where: { email: email.toLowerCase().trim() } });
+
+    console.log(`✅ Email verified and account created for ${email}`);
     return res.status(200).json({ success: true, message: 'Email verified successfully. You can now log in.' });
   } catch (err) {
     console.error('Email verification error:', err);
@@ -708,22 +739,35 @@ router.post('/resend-verification', emailLimiter, async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ success: false, message: 'Email is required.' });
 
+    // Check if the user already exists and is verified
     const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
-
-    // Always return success to prevent email enumeration
-    if (!user || user.is_verified) {
+    if (user && user.is_verified) {
       return res.status(200).json({ success: true, message: 'If that account exists and is unverified, a new link has been sent.' });
+    }
+
+    // Check if there is an OTP verification record
+    const otpRecord = await prisma.otpVerification.findUnique({ where: { email: email.toLowerCase().trim() } });
+    if (!otpRecord) {
+       return res.status(200).json({ success: true, message: 'If that account exists and is unverified, a new link has been sent.' });
     }
 
     const verificationToken = generateOTP();
     const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { verification_token: verificationToken, verification_expires_at: verificationExpiry }
+    await prisma.otpVerification.update({
+      where: { email: email.toLowerCase().trim() },
+      data: { otp: verificationToken, expires_at: verificationExpiry }
     });
 
-    await sendVerificationEmail(user, verificationToken);
+    let userName = 'User';
+    if (otpRecord.meta_data) {
+      try {
+        const parsedMeta = JSON.parse(otpRecord.meta_data);
+        if (parsedMeta.name) userName = parsedMeta.name;
+      } catch (e) {}
+    }
+    const userForEmail = { name: userName, email: email.toLowerCase().trim() };
+    await sendVerificationEmail(userForEmail, verificationToken);
 
     return res.status(200).json({ success: true, message: 'Verification email resent. Check your inbox.' });
   } catch (err) {

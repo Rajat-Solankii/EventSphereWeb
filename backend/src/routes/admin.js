@@ -18,6 +18,35 @@ function getSmtpTransporter() {
   return null;
 }
 
+async function sendRemovedFromOrgEmail(userEmail, userName, orgName) {
+  const transporter = getSmtpTransporter();
+  if (!transporter) return;
+
+  const from = process.env.SMTP_FROM || `"EventSphere" <${process.env.SMTP_USER}>`;
+
+  await transporter.sendMail({
+    from,
+    to: userEmail,
+    subject: `Your Account has been Removed from ${orgName}`,
+    html: `
+      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
+        <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
+          <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Account Deleted</h1>
+          <p style="margin:8px 0 0;color:#666666;font-size:15px;">Your account has been removed by your organization administrator.</p>
+        </div>
+        <div style="padding:40px;">
+          <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${userName}</strong>,</p>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">This email is to notify you that your EventSphere account associated with <strong>${orgName}</strong> has been deleted by an administrator.</p>
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">If you believe this was a mistake, please contact your organization administrator.</p>
+        </div>
+        <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
+          <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
+        </div>
+      </div>
+    `
+  });
+}
+
 const prisma = new PrismaClient();
 
 // ===== LIST ALL USERS IN ORG =====
@@ -234,6 +263,11 @@ router.delete('/users/:id', verifyToken, requireRole('ORG_ADMIN'), async (req, r
     await prisma.session.deleteMany({ where: { user_id: req.params.id } });
     await prisma.eventAccess.deleteMany({ where: { user_id: req.params.id } });
     await prisma.user.delete({ where: { id: req.params.id } });
+    
+    // Fetch org name for the email
+    const org = await prisma.organization.findUnique({ where: { id: req.user.organization_id } });
+    sendRemovedFromOrgEmail(existing.email, existing.name, org?.name || 'your organization').catch(() => {});
+
     res.status(200).json({ success: true, message: 'User deleted.' });
   } catch (err) {
     console.error('Delete user error:', err);

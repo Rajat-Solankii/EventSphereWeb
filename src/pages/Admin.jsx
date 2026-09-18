@@ -14,6 +14,15 @@ import { STOCK_IMAGES } from '../data/stockImages';
 
 const MOCK_LOGS = [];
 
+const PREDEFINED_SMTP_PROVIDERS = [
+  { id: 'gmail', name: 'Gmail', host: 'smtp.gmail.com', ports: [465, 587] },
+  { id: 'outlook', name: 'Outlook / Hotmail', host: 'smtp.office365.com', ports: [587] },
+  { id: 'yahoo', name: 'Yahoo Mail', host: 'smtp.mail.yahoo.com', ports: [465, 587] },
+  { id: 'icloud', name: 'iCloud Mail', host: 'smtp.mail.me.com', ports: [587] },
+  { id: 'aol', name: 'AOL Mail', host: 'smtp.aol.com', ports: [465] },
+  { id: 'custom', name: 'Custom', host: '', ports: [] }
+];
+
 // ===== CUSTOM TOAST NOTIFICATION SYSTEM =====
 const ToastContext = React.createContext();
 
@@ -699,6 +708,8 @@ const formatMessage = (text) => {
 
 function AIChatModal({ isOpen, onClose, onEventReady }) {
   const [messages, setMessages] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -718,10 +729,38 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
     }
   }, [isProcessing]);
 
+  const fetchSessions = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/v1/events/ai-chat/sessions', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
+      });
+      const data = await res.json();
+      if (data.success && data.sessions) {
+        setSessions(data.sessions);
+        if (!currentSessionId && data.sessions.length > 0) {
+          setCurrentSessionId(data.sessions[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load sessions', err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
+      fetchSessions();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (!currentSessionId) {
+        setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
+        return;
+      }
+
       setIsLoadingHistory(true);
-      fetch('http://localhost:3000/api/v1/events/ai-chat/history', {
+      fetch(`http://localhost:3000/api/v1/events/ai-chat/history/${currentSessionId}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       })
       .then(res => res.json())
@@ -735,7 +774,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
       .catch(err => console.error(err))
       .finally(() => setIsLoadingHistory(false));
     }
-  }, [isOpen]);
+  }, [isOpen, currentSessionId]);
 
   if (!isOpen) return null;
 
@@ -756,7 +795,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('es_token')}`
         },
-        body: JSON.stringify({ messages: newMessages })
+        body: JSON.stringify({ messages: newMessages, sessionId: currentSessionId })
       });
       const data = await res.json();
       if (!res.ok) {
@@ -764,11 +803,16 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
       }
 
       if (data.is_ready) {
+        if (data.sessionId) setCurrentSessionId(data.sessionId);
         toast('AI has finished preparing your event details!', 'success');
-        onEventReady(data.event_data);
+        onEventReady({ ...data.event_data, ai_session_id: data.sessionId });
         onClose();
         setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
       } else {
+        if (data.sessionId && data.sessionId !== currentSessionId) {
+          setCurrentSessionId(data.sessionId);
+          fetchSessions(); // Refresh list to get new chat title
+        }
         setMessages([...newMessages, { role: 'assistant', content: data.message }]);
       }
     } catch (err) {
@@ -777,6 +821,11 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleNewChat = () => {
+    setCurrentSessionId(null);
+    setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
   };
 
   return createPortal(
@@ -791,9 +840,27 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
             </h3>
             <p className="text-xs text-theme-text/60 mt-1">Powered by Gemini</p>
           </div>
-          <button type="button" onClick={onClose} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {sessions.length > 0 && (
+              <select 
+                value={currentSessionId || ''}
+                onChange={(e) => setCurrentSessionId(e.target.value)}
+                className="text-xs border-gray-200 rounded px-2 py-1 bg-white text-gray-700 max-w-[120px] truncate"
+              >
+                <option value="" disabled>Select Chat...</option>
+                {sessions.map(s => (
+                  <option key={s.id} value={s.id}>{s.title || 'Chat'}</option>
+                ))}
+              </select>
+            )}
+            <button type="button" onClick={handleNewChat} className="text-xs flex items-center gap-1 font-medium text-theme-text/60 hover:text-black hover:bg-gray-100 px-2 py-1 rounded transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+              New Chat
+            </button>
+            <button type="button" onClick={onClose} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
@@ -1158,13 +1225,14 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       tiers: processedTiers,
       capacity: eventData.capacity || 100,
       customFormFields: [],
-      _aiCoverTemplate: aiCoverTemplate
+      _aiCoverTemplate: aiCoverTemplate,
+      ai_session_id: eventData.ai_session_id
     });
     setEditingEventId(null);
     setIsCreating(true);
   };
 
-  const [smtpForm, setSmtpForm] = useState({ host: '', port: '', user: '', pass: '', fromEmail: '' });
+  const [smtpForm, setSmtpForm] = useState({ host: 'smtp.gmail.com', port: '587', user: '', pass: '', fromEmail: '' });
   const [smtpTestState, setSmtpTestState] = useState('idle'); // idle | loading | success | error
   const [smtpTestMessage, setSmtpTestMessage] = useState('');
   const [smtpTestEmail, setSmtpTestEmail] = useState('');
@@ -1191,7 +1259,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     if (viewingEventId) {
       const event = events.find(e => e.id === viewingEventId);
       if (event && initializedEventId.current !== viewingEventId) {
-        setSmtpForm(event.smtp_config ? (typeof event.smtp_config === 'string' ? JSON.parse(event.smtp_config) : event.smtp_config) : { host: '', port: '', user: '', pass: '', fromEmail: '' });
+        setSmtpForm(event.smtp_config ? (typeof event.smtp_config === 'string' ? JSON.parse(event.smtp_config) : event.smtp_config) : { host: 'smtp.gmail.com', port: '587', user: '', pass: '', fromEmail: '' });
         setPageConfig(event.page_config ? (typeof event.page_config === 'string' ? JSON.parse(event.page_config) : event.page_config) : { primaryColor: '#10b981', bgColor: '#020617', bgImage: '', showSocials: true });
         setUpiConfig(event.upi_config ? (typeof event.upi_config === 'string' ? JSON.parse(event.upi_config) : event.upi_config) : { upiId: '', upiName: '' });
         initializedEventId.current = viewingEventId;
@@ -1263,6 +1331,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
     const handleSmtpSave = async (e) => {
       e?.preventDefault?.();
+
+      if (!smtpForm.host) return toast('Please enter SMTP Host.', 'error');
+      if (!smtpForm.port) return toast('Please enter SMTP Port.', 'error');
+      if (!smtpForm.user) return toast('Please enter SMTP Username.', 'error');
+      if (!smtpForm.pass) return toast('Please enter SMTP Password / App Password.', 'error');
+
       try {
         const res = await fetch(`http://localhost:3000/api/v1/events/${event.id}`, {
           method: 'PUT',
@@ -1555,8 +1629,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300 relative">
-        {showDeleteModal && eventToDelete && (
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4">
+        {showDeleteModal && eventToDelete && createPortal(
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
             <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
             <div className="relative bg-white border border-rose-500/20 rounded-xl w-full max-w-md shadow-2xl p-6 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-start mb-4">
@@ -1593,7 +1667,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 I understand the consequences, delete this event
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         <div className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
@@ -1685,7 +1760,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
         {eventActiveTab === 'smtp' && (
           <div className="space-y-8">
-            <form onSubmit={handleSmtpSave} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
+            <form onSubmit={handleSmtpSave} noValidate className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
               <div className="mb-6">
                 <h3 className="text-xl font-serif font-normal text-theme-text mb-2">SMTP Configuration</h3>
                 <p className="text-theme-text/60">Configure custom email settings to send tickets from your own domain instead of the default platform address.</p>
@@ -1699,7 +1774,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               <ol className="list-decimal list-inside space-y-1 ml-1">
                 <li>Go to your Google Account Settings &gt; Security.</li>
                 <li>Enable <strong>2-Step Verification</strong> if not already enabled.</li>
-                <li>Search for "App passwords" in your Google Account settings.</li>
+                <li>Search for "App passwords" in your Google Account settings (<a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline font-medium">direct link</a>).</li>
                 <li>Create a new App Password and name it "EventSphere".</li>
                 <li>Use <code className="bg-blue-100 px-1 py-0.5 rounded">smtp.gmail.com</code> for Host and <code className="bg-blue-100 px-1 py-0.5 rounded">587</code> for Port.</li>
                 <li>Enter the generated 16-character App Password below.</li>
@@ -1709,15 +1784,62 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Host</label>
-                <input type="text" required value={smtpForm.host} onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="smtp.gmail.com" />
+                <select 
+                  value={PREDEFINED_SMTP_PROVIDERS.find(p => p.host === smtpForm.host && p.id !== 'custom')?.id || 'custom'} 
+                  onChange={(e) => {
+                    const selected = PREDEFINED_SMTP_PROVIDERS.find(p => p.id === e.target.value);
+                    if (selected && selected.id !== 'custom') {
+                      setSmtpForm({ ...smtpForm, host: selected.host, port: selected.ports[0].toString() });
+                    } else {
+                      setSmtpForm({ ...smtpForm, host: '' });
+                    }
+                  }} 
+                  className={`w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text ${!PREDEFINED_SMTP_PROVIDERS.find(p => p.host === smtpForm.host && p.id !== 'custom') ? 'mb-3' : ''}`}
+                >
+                  {PREDEFINED_SMTP_PROVIDERS.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} {p.id !== 'custom' ? `(${p.host})` : ''}</option>
+                  ))}
+                </select>
+                
+                {(!PREDEFINED_SMTP_PROVIDERS.find(p => p.host === smtpForm.host && p.id !== 'custom')) && (
+                  <input type="text" required value={smtpForm.host} onChange={(e) => setSmtpForm({ ...smtpForm, host: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text animate-fade-in" placeholder="smtp.custom.com" />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Port</label>
-                <input type="number" required value={smtpForm.port} onChange={(e) => setSmtpForm({ ...smtpForm, port: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="587" />
+                {PREDEFINED_SMTP_PROVIDERS.find(p => p.host === smtpForm.host && p.id !== 'custom') ? (
+                  <select 
+                    value={smtpForm.port} 
+                    onChange={(e) => setSmtpForm({ ...smtpForm, port: e.target.value })} 
+                    className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text animate-fade-in"
+                  >
+                    {PREDEFINED_SMTP_PROVIDERS.find(p => p.host === smtpForm.host && p.id !== 'custom').ports.map(port => (
+                      <option key={port} value={port}>{port}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input type="number" required value={smtpForm.port} onChange={(e) => setSmtpForm({ ...smtpForm, port: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text animate-fade-in" placeholder="587" />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Username</label>
-                <input type="text" required value={smtpForm.user} onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder="info@myevent.com" />
+                <div className="relative group">
+                  <input type="text" required value={smtpForm.user} onChange={(e) => setSmtpForm({ ...smtpForm, user: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text peer" placeholder="info@myevent.com" />
+                  
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-md p-3 opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200">
+                    <p className="text-xs text-theme-text/60 mb-2">Suggested username (your login email):</p>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { 
+                        e.preventDefault(); 
+                        setSmtpForm({...smtpForm, user: user?.email || ''});
+                      }}
+                      className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded text-sm text-blue-800 font-medium border border-blue-200 transition-colors"
+                    >
+                      {user?.email || 'email@example.com'}
+                    </button>
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">SMTP Password / App Password</label>
@@ -1725,7 +1847,23 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-sans font-medium text-theme-text/80 mb-2">From Address</label>
-                <input type="text" value={smtpForm.fromEmail} onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text" placeholder='"Tech Event 2026" <info@techevent.com>' />
+                <div className="relative group">
+                  <input type="text" value={smtpForm.fromEmail} onChange={(e) => setSmtpForm({ ...smtpForm, fromEmail: e.target.value })} className="w-full bg-white/50 border border-gray-200 rounded-sm px-4 py-2 text-theme-text peer" placeholder='"Tech Event 2026" <info@techevent.com>' />
+                  
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded-md p-3 opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200">
+                    <p className="text-xs text-theme-text/60 mb-2">Suggested format based on event name and email:</p>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => { 
+                        e.preventDefault(); 
+                        setSmtpForm({...smtpForm, fromEmail: `"${event.title}" <${smtpForm.user || user?.email || ''}>`});
+                      }}
+                      className="w-full text-left p-2 bg-blue-50 hover:bg-blue-100 rounded text-sm text-blue-800 font-medium border border-blue-200 transition-colors"
+                    >
+                      "{event.title}" &lt;{smtpForm.user || user?.email || 'email@example.com'}&gt;
+                    </button>
+                  </div>
+                </div>
                 <p className="text-xs text-theme-text/50 mt-2">Optional: Define exactly how the sender name should appear in the recipient's inbox.</p>
               </div>
             </div>
@@ -2871,7 +3009,8 @@ function AdminDashboardInner() {
         available_slots: parseInt(newEvent.capacity || 100),
         image: newEvent.image,
         tiers: newEvent.tiers,
-        customFormFields: newEvent.customFormFields
+        customFormFields: newEvent.customFormFields,
+        ai_session_id: newEvent.ai_session_id
       };
 
       const res = await fetch('http://localhost:3000/api/v1/events', {

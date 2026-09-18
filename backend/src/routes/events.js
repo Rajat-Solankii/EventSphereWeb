@@ -123,7 +123,7 @@ router.get('/public/:id', async (req, res) => {
 // ===== CREATE EVENT =====
 router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (req, res) => {
   try {
-    const { title, date_time, end_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config } = req.body;
+    const { title, date_time, end_time, venue, ticket_price, total_capacity, available_slots, image, tiers, customFormFields, smtp_config, page_config, ai_session_id } = req.body;
     
     if (!req.user.organization_id && req.user.role !== 'SYSTEM_ADMIN') {
       return res.status(400).json({ error: 'You must belong to an organization to create an event.' });
@@ -158,6 +158,17 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
         page_config: page_config ? JSON.stringify(page_config) : null
       }
     });
+
+    if (ai_session_id) {
+      try {
+        await prisma.aiChatSession.updateMany({
+          where: { id: ai_session_id, user_id: req.user.id },
+          data: { event_id: event.id }
+        });
+      } catch (e) {
+        console.error('Failed to link ai session to event', e);
+      }
+    }
 
     res.status(201).json({ ...event, tiers: tiers || [], customFormFields: customFormFields || [] });
   } catch (err) {
@@ -272,20 +283,46 @@ router.delete('/:id', verifyToken, requireEventAccess, async (req, res) => {
   }
 });
 
-// ===== AI CHAT HISTORY =====
-router.get('/ai-chat/history', verifyToken, async (req, res) => {
+// ===== AI CHAT SESSIONS =====
+router.get('/ai-chat/sessions', verifyToken, async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id }
+    const sessions = await prisma.aiChatSession.findMany({
+      where: { user_id: req.user.id },
+      orderBy: { updated_at: 'desc' },
+      select: { id: true, title: true, created_at: true, event_id: true }
+    });
+    res.status(200).json({ success: true, sessions });
+  } catch (err) {
+    console.error('Fetch AI chat sessions error:', err);
+    res.status(500).json({ error: 'Failed to fetch chat sessions' });
+  }
+});
+
+router.get('/ai-chat/history/:sessionId', verifyToken, async (req, res) => {
+  try {
+    const session = await prisma.aiChatSession.findFirst({
+      where: { id: req.params.sessionId, user_id: req.user.id }
     });
     let history = [];
-    if (user && user.ai_chat_history) {
-      history = JSON.parse(user.ai_chat_history);
+    if (session && session.messages) {
+      history = JSON.parse(session.messages);
     }
     res.status(200).json({ success: true, history });
   } catch (err) {
     console.error('Fetch AI chat history error:', err);
     res.status(500).json({ error: 'Failed to fetch history' });
+  }
+});
+
+router.delete('/ai-chat/history/:sessionId', verifyToken, async (req, res) => {
+  try {
+    await prisma.aiChatSession.deleteMany({
+      where: { id: req.params.sessionId, user_id: req.user.id }
+    });
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('Delete AI chat history error:', err);
+    res.status(500).json({ error: 'Failed to delete history' });
   }
 });
 
@@ -297,7 +334,7 @@ router.post('/ai-chat', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), a
       return res.status(400).json({ error: 'Gemini API Key is missing. Please add GEMINI_API_KEY to your backend .env file.' });
     }
 
-    const { messages } = req.body;
+    const { messages, sessionId } = req.body;
     if (!messages || !Array.isArray(messages)) {
       return res.status(400).json({ error: 'Messages array is required.' });
     }
@@ -307,6 +344,12 @@ router.post('/ai-chat', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), a
     const systemInstruction = `You are an AI assistant for EventSphere helping an event organizer create a new event.
 Your goal is to gather all necessary details to create the event: Title, Date & Time, Venue, Total Capacity, Currency (INR, USD, EUR, GBP), and Ticket Tiers (Name, Price, Capacity).
 Ask the user questions one at a time if information is missing. Keep your responses concise, friendly, and focused.
+
+EVENT PLANNING & ADVICE:
+If the user asks for an "event planner", a "proper plan", or wants help organizing a specific type of event (like a party, wedding, etc.):
+1. First, ask them for specific details about the style, culture, or theme. For example, if they want a wedding planner, ask if it's a traditional Indian wedding (which spans multiple days of ceremonies like Haldi, Sangeet, etc.) or a Western/foreigner wedding (which follows a different trend and structure). For a party, ask if it's a corporate mixer, casual birthday, theme party, etc.
+2. Once they provide the context, give them a highly detailed, culturally and contextually appropriate event plan (timelines, themes, suggested activities).
+3. After providing the plan, smoothly pivot back to collecting the required details (Title, Date, Venue, etc.) to finalize creating their event in the system.
 
 VISION & IMAGE ANALYSIS:
 If the user uploads an image (like a poster, flyer, venue photo, or ticket design):
@@ -381,28 +424,42 @@ The JSON MUST match this structure exactly:
       // Not valid json, ignore
     }
 
-    if (parsedJson && parsedJson.event_ready) {
-      await prisma.user.update({
-        where: { id: req.user.id },
-        data: { ai_chat_history: null }
+    const newHistory = [...messages, { role: 'assistant', content: reply }];
+    let currentSessionId = sessionId;
+
+    if (!currentSessionId) {
+      // Create new session
+      const titleMatch = newHistory[0]?.content?.substring(0, 40) || 'New Event Plan';
+      const session = await prisma.aiChatSession.create({
+        data: {
+          user_id: req.user.id,
+          title: titleMatch,
+          messages: JSON.stringify(newHistory)
+        }
       });
-      return res.status(200).json({
-        success: true,
-        is_ready: true,
-        event_data: parsedJson.event_data
+      currentSessionId = session.id;
+    } else {
+      // Update existing session
+      await prisma.aiChatSession.updateMany({
+        where: { id: currentSessionId, user_id: req.user.id },
+        data: { messages: JSON.stringify(newHistory) }
       });
     }
 
-    const newHistory = [...messages, { role: 'assistant', content: reply }];
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { ai_chat_history: JSON.stringify(newHistory) }
-    });
+    if (parsedJson && parsedJson.event_ready) {
+      return res.status(200).json({
+        success: true,
+        is_ready: true,
+        event_data: parsedJson.event_data,
+        sessionId: currentSessionId
+      });
+    }
 
     res.status(200).json({
       success: true,
       is_ready: false,
-      message: reply
+      message: reply,
+      sessionId: currentSessionId
     });
 
   } catch (err) {
