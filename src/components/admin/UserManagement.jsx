@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Shield, Trash2, Plus, X, Eye, Edit, Loader2, AlertTriangle } from 'lucide-react';
+import { Shield, Trash2, Plus, X, Eye, Edit, Loader2, AlertTriangle, ServerCrash } from 'lucide-react';
 
 export default function UserManagement() {
   const { user } = useAuth();
@@ -172,7 +172,20 @@ export default function UserManagement() {
       <div className="text-theme-text/60 font-semibold animate-pulse">Loading staff...</div>
     </div>
   );
-  if (error) return <div className="p-8 text-rose-400">Error: {error}</div>;
+  if (error) return (
+    <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4 animate-in fade-in zoom-in duration-300">
+      <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center border border-rose-500/20">
+        <ServerCrash className="w-8 h-8 text-rose-500" />
+      </div>
+      <div className="text-center">
+        <h3 className="text-xl font-bold text-theme-text font-serif">Connection Error</h3>
+        <p className="text-theme-text/60 mt-2 max-w-md mx-auto">{error === 'Network error' ? 'Failed to connect to the EventSphere backend server. Please ensure the server is running.' : error}</p>
+      </div>
+      <button onClick={fetchUsers} className="mt-4 px-6 py-2 bg-theme-primary text-theme-text font-semibold rounded-lg shadow-lg hover:bg-theme-primary/90 transition-colors">
+        Try Again
+      </button>
+    </div>
+  );
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">

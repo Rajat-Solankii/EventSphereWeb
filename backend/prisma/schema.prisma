@@ -45,6 +45,7 @@ model User {
   sessions     Session[]
   event_access EventAccess[]
   ai_sessions  AiChatSession[]
+  notifications Notification[]
 }
 
 model OtpVerification {
@@ -151,4 +152,16 @@ model AiChatSession {
 
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   event      Event?   @relation(fields: [event_id], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  user_id    String
+  title      String
+  message    String
+  type       String   @default("INFO") // INFO, SUCCESS, WARNING, ERROR
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 }

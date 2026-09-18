@@ -51,6 +51,22 @@ export function AuthProvider({ children }) {
     if (refreshTimer.current) clearTimeout(refreshTimer.current);
   };
 
+  const handleJsonResponse = async (res) => {
+    try {
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        throw { message: 'Server returned an invalid response. The backend might be offline or unreachable.' };
+      }
+      if (!res.ok || data.success === false) throw { status: res.status, ...data, message: data.message || data.error || 'Request failed' };
+      return data;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   // ===== Login =====
   const login = async (email, password) => {
     const res = await fetch(`${API}/api/auth/login`, {
@@ -59,8 +75,7 @@ export function AuthProvider({ children }) {
       credentials: 'include',
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
-    if (!data.success) throw { status: res.status, ...data };
+    const data = await handleJsonResponse(res);
 
     setAccessToken(data.accessToken);
     setUser(data.user);
@@ -81,9 +96,7 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password })
     });
-    const data = await res.json();
-    if (!data.success) throw { status: res.status, ...data };
-    return data;
+    return await handleJsonResponse(res);
   };
 
   // ===== Forgot Password =====
@@ -93,9 +106,7 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-    const data = await res.json();
-    if (!data.success) throw { status: res.status, ...data };
-    return data;
+    return await handleJsonResponse(res);
   };
 
   // ===== Reset Password =====
@@ -105,9 +116,7 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp, newPassword })
     });
-    const data = await res.json();
-    if (!data.success) throw { status: res.status, ...data };
-    return data;
+    return await handleJsonResponse(res);
   };
 
   // ===== Verify Email OTP =====
@@ -117,9 +126,7 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp })
     });
-    const data = await res.json();
-    if (!data.success) throw { status: res.status, ...data };
-    return data;
+    return await handleJsonResponse(res);
   };
 
   // ===== Logout =====

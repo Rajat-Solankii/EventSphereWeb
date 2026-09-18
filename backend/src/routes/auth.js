@@ -849,6 +849,19 @@ router.post('/reset-password', authLimiter, async (req, res) => {
       }
     });
 
+    try {
+      await prisma.notification.create({
+        data: {
+          user_id: user.id,
+          title: 'Password Changed',
+          message: 'Your account password was successfully updated.',
+          type: 'INFO'
+        }
+      });
+    } catch (err) {
+      console.error('Failed to create notification', err);
+    }
+
     // Optionally revoke all sessions to force re-login on all devices
     await prisma.session.deleteMany({ where: { user_id: user.id } });
 

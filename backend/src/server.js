@@ -18,6 +18,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
 const adminRoutes = require('./routes/admin');
+const notificationsRoutes = require('./routes/notifications');
 
 // Middleware
 const { apiLimiter } = require('./middleware/rateLimit');
@@ -44,6 +45,7 @@ app.use(apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/v1/notifications', notificationsRoutes);
 
 // ===== SMTP HELPER FUNCTIONS (shared) =====
 
@@ -200,7 +202,7 @@ app.post('/api/v1/tickets/book', async (req, res) => {
   try {
     const eventData = await prisma.event.findUnique({
       where: { id: attendee.eventId },
-      select: { date_time: true, smtp_config: true, title: true }
+      select: { date_time: true, smtp_config: true, title: true, organization_id: true }
     });
     
     if (!eventData) {
@@ -258,6 +260,25 @@ app.post('/api/v1/tickets/book', async (req, res) => {
     } catch (err) {
       emailError = err.message;
       console.error('⚠️  Email failed (ticket saved):', err.message);
+    }
+
+    try {
+      if (eventData.organization_id) {
+        const orgUsers = await prisma.user.findMany({
+          where: { organization_id: eventData.organization_id }
+        });
+        const notifications = orgUsers.map(u => ({
+          user_id: u.id,
+          title: 'New Registration',
+          message: `${attendee.name} just registered for '${eventData.title}'.`,
+          type: 'INFO'
+        }));
+        if (notifications.length > 0) {
+          await prisma.notification.createMany({ data: notifications });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to create registration notification', e);
     }
 
     res.status(200).json({
@@ -737,36 +758,8 @@ app.post('/api/v1/tickets/:id/checkout', async (req, res) => {
   }
 });
 
-// ===== AUTO DATABASE SETUP & START SERVER =====
+// ===== START SERVER =====
 async function startServer() {
-  // Auto-create database if it doesn't exist
-  try {
-    const dbUrl = process.env.DATABASE_URL || 'file:./dev.db';
-    const dbPath = dbUrl.replace('file:', '').replace('./', path.join(__dirname, '..', ''));
-    const prismaDir = path.join(__dirname, '..', 'prisma');
-
-    if (!fs.existsSync(dbPath.trim())) {
-      console.log('⚙️  Database not found. Creating automatically...');
-      execSync('npx prisma db push --skip-generate', {
-        cwd: path.join(__dirname, '..'),
-        stdio: 'inherit'
-      });
-      console.log('✅ Database created and schema synced.');
-    } else {
-      // Database exists — ensure schema is up to date
-      try {
-        execSync('npx prisma db push --skip-generate', {
-          cwd: path.join(__dirname, '..'),
-          stdio: 'pipe'
-        });
-      } catch (e) {
-        // Schema already in sync, ignore
-      }
-    }
-  } catch (err) {
-    console.error('⚠️  Auto database setup failed:', err.message);
-    console.log('   Run manually: cd backend && npx prisma db push');
-  }
 
   app.listen(PORT, async () => {
     const os = require('os');

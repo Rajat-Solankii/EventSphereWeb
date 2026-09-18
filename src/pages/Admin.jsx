@@ -2943,7 +2943,37 @@ function AdminDashboardInner() {
 
   const [events, setEvents] = useState([]);
   const [allAttendees, setAllAttendees] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/v1/notifications', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
+      });
+      if (res.ok) setNotifications(await res.json());
+    } catch (e) { console.error('Failed to fetch notifications', e); }
+  };
+
+  const markAllRead = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/v1/notifications/mark-all-read', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
+      });
+      if (res.ok) setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+    } catch (e) {}
+  };
+  
+  const markAsRead = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
+      });
+      if (res.ok) setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+    } catch (e) {}
+  };
 
   const fetchEvents = async () => {
     try {
@@ -2996,12 +3026,13 @@ function AdminDashboardInner() {
   };
 
   useEffect(() => {
-    Promise.all([fetchEvents(), fetchAttendees()]).finally(() => setIsLoading(false));
+    Promise.all([fetchEvents(), fetchAttendees(), fetchNotifications()]).finally(() => setIsLoading(false));
 
     // Auto-refresh periodically for live dashboard updates
     const interval = setInterval(() => {
       fetchEvents();
       fetchAttendees();
+      fetchNotifications();
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -3219,7 +3250,7 @@ function AdminDashboardInner() {
 
       <main className="flex-1 flex flex-col h-full overflow-hidden relative z-20 py-6 pr-6">
 
-        <header className="h-16 mb-6 bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex items-center justify-between px-6 shrink-0 relative overflow-hidden">
+        <header className="h-16 mb-6 bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex items-center justify-between px-6 shrink-0 relative z-50">
           <div className="absolute inset-0 bg-gradient-to-r from-white/[0.01] to-transparent pointer-events-none" />
           <div className="font-serif font-normal text-theme-text flex items-center tracking-wide text-lg relative z-10">
             {viewingEventId
@@ -3242,10 +3273,59 @@ function AdminDashboardInner() {
             >
               <Settings className="w-5 h-5" />
             </button>
-            <button className="p-2 text-theme-text/60 hover:text-theme-text rounded-sm hover:bg-white/[0.05] border border-transparent hover:border-gray-100 transition-all relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-black rounded-none shadow-[0_0_8px_rgba(99,102,241,0.8)]"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => {
+                  const newParams = new URLSearchParams(searchParams);
+                  if (searchParams.get('view') === 'notifications') {
+                    newParams.delete('view');
+                  } else {
+                    newParams.set('view', 'notifications');
+                  }
+                  setSearchParams(newParams);
+                }}
+                className="p-2 text-theme-text/60 hover:text-theme-text rounded-sm hover:bg-white/[0.05] border border-transparent hover:border-gray-100 transition-all relative">
+                <Bell className="w-5 h-5" />
+                {notifications.some(n => !n.is_read) && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-none shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span>
+                )}
+              </button>
+
+              {searchParams.get('view') === 'notifications' && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40"
+                    onClick={() => {
+                      const newParams = new URLSearchParams(searchParams);
+                      newParams.delete('view');
+                      setSearchParams(newParams);
+                    }}
+                  />
+                  <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-100 shadow-[0_8px_32px_rgba(0,0,0,0.1)] rounded-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                  <div className="p-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                    <h3 className="font-serif text-sm font-semibold text-theme-text">Notifications</h3>
+                    <button onClick={markAllRead} className="text-xs text-theme-primary hover:text-theme-secondary transition-colors font-semibold tracking-wide">Mark all read</button>
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-sm text-gray-500 font-mono">No notifications yet.</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div key={n.id} onClick={() => { if (!n.is_read) markAsRead(n.id); }} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer ${n.is_read ? 'opacity-60' : 'bg-blue-50/20'}`}>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-semibold text-sm text-theme-text">{n.title}</span>
+                            {!n.is_read && <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mt-1.5 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>}
+                          </div>
+                          <p className="text-xs text-gray-600 font-mono leading-relaxed">{n.message}</p>
+                          <span className="text-[10px] text-gray-400 mt-2 block font-mono">{new Date(n.created_at).toLocaleString()}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+                </>
+              )}
+            </div>
           </div>
         </header>
 

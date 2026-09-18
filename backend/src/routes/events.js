@@ -170,6 +170,19 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
       }
     }
 
+    try {
+      await prisma.notification.create({
+        data: {
+          user_id: req.user.id,
+          title: 'Event Created',
+          message: `New event '${event.title}' was successfully created.`,
+          type: 'SUCCESS'
+        }
+      });
+    } catch (e) {
+      console.error('Failed to create notification', e);
+    }
+
     res.status(201).json({ ...event, tiers: tiers || [], customFormFields: customFormFields || [] });
   } catch (err) {
     console.error('Create event error:', err);
