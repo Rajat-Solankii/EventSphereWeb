@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
-  Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle, Loader, Clock
+  Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle, Loader, Clock, Menu
 } from 'lucide-react';
 import TemplateDesigner from '../components/TemplateDesigner';
 import { useAuth } from '../context/AuthContext';
@@ -2776,26 +2776,26 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-300">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-serif font-normal text-theme-text tracking-tight">Events Management</h2>
           <p className="text-theme-text/60 text-sm mt-1">Manage your active events and launch new ones.</p>
         </div>
         {['ORG_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role) && (
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-row w-full md:w-auto gap-3">
             <button
               onClick={() => setSearchParams({ view: 'ai-chat' })}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none font-sans font-medium transition-all shadow-lg shadow-gray-500/20 border border-gray-500"
+              className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-3 sm:px-5 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none text-xs sm:text-sm font-sans font-medium transition-all shadow-lg shadow-gray-500/20 border border-gray-500"
             >
-              <MessageSquare className="w-5 h-5" />
-              <span>Ask AI to Create</span>
+              <MessageSquare className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />
+              <span className="whitespace-nowrap">Ask AI</span>
             </button>
             <button
               onClick={() => setSearchParams({ view: 'create' })}
-              className="flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-none font-sans font-medium transition-all shadow-lg shadow-gray-500/20"
+              className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-3 sm:px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-none text-xs sm:text-sm font-sans font-medium transition-all shadow-lg shadow-gray-500/20"
             >
-              <Plus className="w-5 h-5" />
-              <span>Create Event</span>
+              <Plus className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />
+              <span className="whitespace-nowrap">Create Event</span>
             </button>
           </div>
         )}
@@ -2943,6 +2943,7 @@ function AdminDashboardInner() {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const activeTab = searchParams.get('tab') || 'events_management';
   const viewingEventId = searchParams.get('event') || null;
@@ -3232,13 +3233,28 @@ function AdminDashboardInner() {
 
       <ParticleBackground />
 
-      <aside className="w-72 hidden md:flex flex-col relative z-20 shrink-0 h-full p-4 pl-6 py-6">
-        <div className="h-full w-full bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex flex-col overflow-hidden">
-          <div className="p-6 border-b border-gray-100 bg-theme-bg/20">
+      {/* Mobile Menu Backdrop */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`w-72 fixed md:relative flex-col z-40 md:z-20 shrink-0 h-full p-4 pl-6 py-6 transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} flex`}>
+        <div className="h-full w-full bg-white/60 md:bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-2xl md:rounded-none flex flex-col overflow-hidden">
+          <div className="p-6 border-b border-gray-100 bg-theme-bg/20 flex justify-between items-center">
             <div className="flex items-center space-x-3 text-theme-text">
               <img src="/logo.png" alt="EventSphere Logo" className="w-12 h-12 object-contain" />
               <span className="font-serif font-normal text-lg tracking-tight">EventSphere</span>
             </div>
+            <button 
+              className="md:hidden text-theme-text/60 hover:text-theme-text"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <X size={24} />
+            </button>
           </div>
 
           <nav className="flex-1 space-y-2 p-4">
@@ -3302,11 +3318,17 @@ function AdminDashboardInner() {
         </div>
       </aside>
 
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-20 py-6 pr-6">
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-20 md:py-6 md:pr-6 p-4">
 
-        <header className="h-16 mb-6 bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex items-center justify-between px-6 shrink-0 relative z-50">
+        <header className="h-16 mb-4 md:mb-6 bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none flex items-center justify-between px-4 md:px-6 shrink-0 relative z-50">
           <div className="absolute inset-0 bg-gradient-to-r from-white/[0.01] to-transparent pointer-events-none" />
-          <div className="font-serif font-normal text-theme-text flex items-center tracking-wide text-lg relative z-10">
+          <div className="font-serif font-normal text-theme-text flex items-center tracking-wide text-lg relative z-10 gap-3">
+            <button 
+              className="md:hidden text-theme-text/80 hover:text-theme-text transition-colors"
+              onClick={() => setIsMobileMenuOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
             {viewingEventId
               ? (events.find(e => e.id === viewingEventId)?.title || 'Event Detail')
               : activeTab === 'events_management' ? 'Events Management'

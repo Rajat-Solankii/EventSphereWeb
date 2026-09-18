@@ -190,7 +190,7 @@ export default function UserManagement() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
       
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-theme-text tracking-tight">Staff Management</h2>
           <p className="text-theme-text/60 text-sm mt-1">Manage staff accounts and their event access.</p>
