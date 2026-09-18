@@ -136,12 +136,13 @@ async function sendAccountDeletionEmail(userEmail, userName) {
       <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;border-radius:8px;overflow:hidden;border:1px solid #e5e5e5;">
         <div style="padding:40px 40px 20px;border-bottom:1px solid #e5e5e5;background:#fafafa;">
           <h1 style="margin:0;color:#000000;font-size:24px;font-weight:600;letter-spacing:-0.5px;">Account Deleted</h1>
-          <p style="margin:8px 0 0;color:#666666;font-size:15px;">We're sorry to see you go.</p>
+          <p style="margin:8px 0 0;color:#666666;font-size:15px;">We're genuinely sad to see you go! 😢</p>
         </div>
         <div style="padding:40px;">
           <p style="color:#111111;font-size:15px;margin:0 0 24px;">Hi <strong>${userName}</strong>,</p>
           <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">This email is to confirm that your EventSphere account has been successfully deleted.</p>
-          <p style="color:#666666;font-size:13px;margin:24px 0 0;">If you ever wish to return, you can always create a new account.</p>
+          <p style="color:#111111;font-size:15px;margin:0 0 28px;line-height:1.5;">It breaks our heart a little bit to say goodbye. Thank you for being a part of our journey, even if it was just for a little while.</p>
+          <p style="color:#666666;font-size:13px;margin:24px 0 0;">If you ever change your mind and wish to return, our doors will always be open for you.</p>
         </div>
         <div style="padding:20px 40px;border-top:1px solid #e5e5e5;background:#fafafa;">
           <p style="margin:0;color:#999999;font-size:12px;text-align:center;">Powered by EventSphere &middot; Automated message</p>
