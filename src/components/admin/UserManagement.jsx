@@ -250,9 +250,11 @@ export default function UserManagement() {
                     )}
                   </td>
                   <td className="py-4 px-6 text-right">
-                    <button onClick={() => setUserToDelete(u)} className="p-2 text-theme-text/60 hover:text-rose-400 transition-colors disabled:opacity-50" disabled={u.id === user.id} title="Delete User">
-                      <Trash2 size={16} />
-                    </button>
+                    {u.role !== 'ORG_ADMIN' && (
+                      <button onClick={() => setUserToDelete(u)} className="p-2 text-theme-text/60 hover:text-rose-400 transition-colors disabled:opacity-50" disabled={u.id === user.id} title="Delete User">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
