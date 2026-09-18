@@ -245,10 +245,10 @@ function ParticleBackground() {
       particles = [];
       const numberOfParticles = Math.floor((canvas.width * canvas.height) / 12000);
       for (let i = 0; i < numberOfParticles; i++) {
-        let size = (Math.random() * 1.5) + 0.5;
+        let size = (Math.random() * 2.5) + 1.5; // Increased size
         let x = Math.random() * canvas.width;
         let y = Math.random() * canvas.height;
-        let opacity = Math.random() * 0.4 + 0.1;
+        let opacity = Math.random() * 0.5 + 0.3; // Increased opacity
         let color = `rgba(165, 180, 252, ${opacity})`;
         let speedX = (Math.random() - 0.5) * 0.4;
         let speedY = (Math.random() - 0.5) * 0.4;
