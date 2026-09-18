@@ -340,10 +340,14 @@ router.post('/ai-chat', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), a
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
+    const currentDate = new Date().toISOString().split('T')[0];
 
     const systemInstruction = `You are an AI assistant for EventSphere helping an event organizer create a new event.
 Your goal is to gather all necessary details to create the event: Title, Date & Time, Venue, Total Capacity, Currency (INR, USD, EUR, GBP), and Ticket Tiers (Name, Price, Capacity).
 Ask the user questions one at a time if information is missing. Keep your responses concise, friendly, and focused.
+
+IMPORTANT TIME CONSTRAINT:
+The current date is ${currentDate}. You MUST NOT create or suggest any events that occur before this date (or in past years). If the user asks to schedule an event in the past, politely inform them that events must be scheduled in the future and ask for a valid date.
 
 EVENT PLANNING & ADVICE:
 If the user asks for an "event planner", a "proper plan", or wants help organizing a specific type of event (like a party, wedding, etc.):

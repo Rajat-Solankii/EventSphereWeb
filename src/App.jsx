@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Admin from './pages/Admin';
 import Registration from './pages/Registration';
@@ -12,11 +12,12 @@ import './index.css';
 
 // Protected route – redirects to /login if not authenticated
 function ProtectedRoute({ children }) {
+  const location = useLocation();
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <img src="/logo.png" alt="EventSphere Logo" className="w-16 h-16 animate-pulse" />
           <p className="text-slate-500 text-sm font-serif">Loading...</p>
@@ -25,14 +26,16 @@ function ProtectedRoute({ children }) {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  return isAuthenticated ? children : <Navigate to="/login" state={{ from: location }} replace />;
 }
 
 // Auth route – redirects to /admin if already logged in
 function AuthRoute({ children }) {
+  const location = useLocation();
   const { isAuthenticated, loading } = useAuth();
   if (loading) return null;
-  return isAuthenticated ? <Navigate to="/admin" replace /> : children;
+  const from = location.state?.from?.pathname || "/admin";
+  return isAuthenticated ? <Navigate to={from} replace /> : children;
 }
 
 function AppRoutes() {

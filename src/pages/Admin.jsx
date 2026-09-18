@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { 
   Eye, Edit3, Trash2, Plus, Calendar, MapPin, Users, Ticket, CheckCircle, Save, ImageIcon, ExternalLink, Activity, DollarSign, Download, Settings, LayoutDashboard, CreditCard, X, ChevronDown, ChevronRight, BarChart3, TrendingUp, Filter, Bell, AlertTriangle, Info, Copy, ShieldAlert, LogOut, Shield, MessageSquare, XCircle, Loader, Clock
@@ -1082,20 +1083,32 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const { user } = useAuth();
   const toast = useToast();
   const confirm = useConfirm();
-  const [isCreating, setIsCreating] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const currentView = searchParams.get('view');
+  const isCreating = currentView === 'create' || currentView === 'edit';
+  const isAIChatOpen = currentView === 'ai-chat';
+  const isMailModalOpen = currentView === 'mail';
+  const isDeleteModalOpen = currentView === 'delete';
+
+  const handleCloseView = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const [editingEventId, setEditingEventId] = useState(null);
   const [activeTierId, setActiveTierId] = useState(null);
   const [isDesigningCover, setIsDesigningCover] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [eventToDelete, setEventToDelete] = useState(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [formData, setFormData] = useState({
     title: '', date: '', end_date: '', venue: '', image: '', currency: 'INR',
     tiers: [{ id: Date.now() + Math.random().toString(36).substr(2, 5), name: 'General Admission', price: '', capacity: '', template: null, _previewTicket: null }],
     customFormFields: []
   });
-
-  const [isAIChatOpen, setIsAIChatOpen] = useState(false);
   
   const event = events?.find(e => e.id === viewingEventId);
 
@@ -1229,7 +1242,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       ai_session_id: eventData.ai_session_id
     });
     setEditingEventId(null);
-    setIsCreating(true);
+    setSearchParams({ view: 'create' });
   };
 
   const [smtpForm, setSmtpForm] = useState({ host: 'smtp.gmail.com', port: '587', user: '', pass: '', fromEmail: '' });
@@ -1249,7 +1262,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const [showBroadcastPreview, setShowBroadcastPreview] = useState(false);
   
   // Private custom email state
-  const [customMailModal, setCustomMailModal] = useState({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' });
+  const [customMailModal, setCustomMailModal] = useState({ attendee: null, subject: '', message: '', attachments: [], status: 'idle' });
   // Per-attendee resend state: { [passId]: 'idle' | 'loading' | 'done' | 'error' }
   const [resendStates, setResendStates] = useState({});
   const [pageConfig, setPageConfig] = useState({ primaryColor: '#10b981', bgColor: '#020617', bgImage: '', showSocials: true });
@@ -1293,7 +1306,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       onAddEvent(finalEventData);
     }
 
-    setIsCreating(false);
+    handleCloseView();
     setEditingEventId(null);
     setFormData({ title: '', date: '', venue: '', image: '', currency: 'INR', tiers: [{ id: Date.now().toString(), name: 'General Admission', price: '', capacity: '', template: null, _previewTicket: null }], customFormFields: [] });
   };
@@ -1318,7 +1331,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const handleEdit = (event) => {
     setFormData({ ...event, currency: event.page_config?.currency || 'INR' });
     setEditingEventId(event.id);
-    setIsCreating(true);
+    setSearchParams({ view: 'edit' });
     setViewingEventId(null);
   };
 
@@ -1524,7 +1537,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         });
         if (res.ok) {
           toast('Private message sent successfully!', 'success');
-          setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' });
+          handleCloseView();
+          setCustomMailModal({ attendee: null, subject: '', message: '', attachments: [], status: 'idle' });
         } else {
           toast('Failed to send message.', 'error');
           setCustomMailModal({...customMailModal, status: 'idle'});
@@ -1629,16 +1643,16 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
     return (
       <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300 relative">
-        {showDeleteModal && eventToDelete && createPortal(
+        {isDeleteModalOpen && createPortal(
           <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-            <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
+            <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => handleCloseView()} />
             <div className="relative bg-white border border-rose-500/20 rounded-xl w-full max-w-md shadow-2xl p-6 animate-in zoom-in-95 duration-200">
               <div className="flex justify-between items-start mb-4">
                 <div className="flex items-center space-x-3 text-rose-500">
                   <Shield className="w-6 h-6" />
                   <h3 className="text-xl font-bold">Delete Event</h3>
                 </div>
-                <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => handleCloseView()} className="text-gray-400 hover:text-gray-600">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1646,21 +1660,21 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 This action is irreversible. All registrations, tickets, and configurations for this event will be permanently destroyed.
               </div>
               <p className="text-sm text-theme-text mb-2">
-                Please type <span className="font-bold select-all bg-gray-100 px-1 rounded">{eventToDelete.title}</span> to confirm.
+                Please type <span className="font-bold select-all bg-gray-100 px-1 rounded">{event.title}</span> to confirm.
               </p>
               <input
                 type="text"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
                 className="w-full bg-white border border-rose-300 focus:border-rose-500 rounded-lg px-4 py-2.5 text-theme-text text-sm focus:outline-none mb-6 font-mono"
-                placeholder={eventToDelete.title}
+                placeholder={event.title}
               />
               <button
-                disabled={deleteConfirmText !== eventToDelete.title}
+                disabled={deleteConfirmText !== event.title}
                 onClick={() => {
-                  onDeleteEvent(eventToDelete.id);
+                  onDeleteEvent(event.id);
                   setViewingEventId(null);
-                  setShowDeleteModal(false);
+                  handleCloseView();
                 }}
                 className="w-full py-2.5 rounded-lg font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-rose-500/20"
               >
@@ -1698,9 +1712,10 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                   });
                 }} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Share Link</button>
                 <button onClick={() => {
-                  setEventToDelete(event);
                   setDeleteConfirmText('');
-                  setShowDeleteModal(true);
+                  const newParams = new URLSearchParams(searchParams);
+                  newParams.set('view', 'delete');
+                  setSearchParams(newParams);
                 }} className="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 rounded border border-rose-400 text-xs font-serif font-normal text-theme-text shadow-lg transition-colors">Delete</button>
               </div>
               <h2 className="text-3xl font-serif font-normal text-theme-text pr-48">{event.title}</h2>
@@ -2282,7 +2297,10 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                                 </button>
                                 {/* Message */}
                                 <button
-                                  onClick={() => setCustomMailModal({ isOpen: true, attendee: a, subject: '', message: '', attachments: [], status: 'idle' })}
+                                  onClick={() => {
+                                    setSearchParams({ view: 'mail' });
+                                    setCustomMailModal({ attendee: a, subject: '', message: '', attachments: [], status: 'idle' });
+                                  }}
                                   className="p-2 text-theme-text/50 hover:text-black hover:bg-gray-100 rounded-sm transition-colors"
                                   title="Send Private Message"
                                 >
@@ -2355,9 +2373,9 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         )}
 
         {/* Custom Mail Modal */}
-        {customMailModal.isOpen && (
+        {isMailModalOpen && customMailModal.attendee && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} />
+            <div className="absolute inset-0 bg-theme-bg/80 backdrop-blur-sm" onClick={() => handleCloseView()} />
             <div className="relative bg-white/95 rounded-none w-full max-w-3xl shadow-2xl overflow-hidden border border-gray-200 animate-in zoom-in-95 duration-200">
               <form onSubmit={handleSendCustomMail}>
                 <div className="px-6 py-4 border-b border-gray-100 bg-theme-bg/5 flex items-center justify-between">
@@ -2368,7 +2386,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     </h3>
                     <p className="text-xs text-theme-text/60 mt-1">{customMailModal.attendee?.email}</p>
                   </div>
-                  <button type="button" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
+                  <button type="button" onClick={() => handleCloseView()} className="p-2 text-theme-text/50 hover:bg-white hover:shadow rounded-none transition-all">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
@@ -2428,7 +2446,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                   </div>
                 </div>
                 <div className="p-6 bg-theme-bg/30 border-t border-gray-100 flex justify-end gap-3">
-                  <button type="button" onClick={() => setCustomMailModal({ isOpen: false, attendee: null, subject: '', message: '', attachments: [], status: 'idle' })} className="px-5 py-2 text-theme-text/60 hover:text-theme-text font-sans font-medium transition-colors">Cancel</button>
+                  <button type="button" onClick={() => handleCloseView()} className="px-5 py-2 text-theme-text/60 hover:text-theme-text font-sans font-medium transition-colors">Cancel</button>
                   <button type="submit" disabled={customMailModal.status === 'loading'} className="px-6 py-2 bg-black text-white rounded-none font-serif font-normal hover:bg-black/90 transition-all flex items-center gap-2 shadow-lg shadow-black/5 disabled:opacity-50">
                     {customMailModal.status === 'loading' ? (
                       <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-none animate-spin inline-block" /> Sending...</>
@@ -2472,7 +2490,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-300 relative">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-serif font-normal text-theme-text">{editingEventId ? 'Edit Event' : 'Create New Event'}</h2>
-          <button onClick={() => { setIsCreating(false); setEditingEventId(null); }} className="text-theme-text/60 hover:text-theme-text transition-colors">Cancel</button>
+          <button onClick={() => { handleCloseView(); setEditingEventId(null); }} className="text-theme-text/60 hover:text-theme-text transition-colors">Cancel</button>
         </div>
 
         <form onSubmit={handleSubmit} className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
@@ -2646,7 +2664,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           </div>
 
           <div className="pt-6 border-t border-gray-200 flex justify-end space-x-4">
-            <button type="button" onClick={() => { setIsCreating(false); setEditingEventId(null); }} className="px-6 py-3 rounded-none font-medium text-theme-text/80 hover:bg-theme-bg transition-colors">
+            <button type="button" onClick={() => { handleCloseView(); setEditingEventId(null); }} className="px-6 py-3 rounded-none font-medium text-theme-text/80 hover:bg-theme-bg transition-colors">
               Cancel
             </button>
             <button type="submit" className="px-8 py-3 rounded-none font-serif font-normal bg-black hover:bg-gray-800 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:shadow-[0_0_25px_rgba(79,70,229,0.5)] transition-all">
@@ -2690,7 +2708,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           document.body
         )}
 
-        <AIChatModal isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} onEventReady={handleAIEventReady} />
+        <AIChatModal isOpen={isAIChatOpen} onClose={() => handleCloseView()} onEventReady={handleAIEventReady} />
       </div>
     );
   }
@@ -2712,14 +2730,14 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {['ORG_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role) && (
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => setIsAIChatOpen(true)}
+              onClick={() => setSearchParams({ view: 'ai-chat' })}
               className="flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none font-sans font-medium transition-all shadow-lg shadow-gray-500/20 border border-gray-500"
             >
               <MessageSquare className="w-5 h-5" />
               <span>Ask AI to Create</span>
             </button>
             <button
-              onClick={() => setIsCreating(true)}
+              onClick={() => setSearchParams({ view: 'create' })}
               className="flex items-center space-x-2 px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-none font-sans font-medium transition-all shadow-lg shadow-gray-500/20"
             >
               <Plus className="w-5 h-5" />
@@ -2830,7 +2848,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           </div>
         );
       })()}
-      <AIChatModal isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} onEventReady={handleAIEventReady} />
+      <AIChatModal isOpen={isAIChatOpen} onClose={() => handleCloseView()} onEventReady={handleAIEventReady} />
     </div>
   );
 }
@@ -2869,10 +2887,56 @@ function AdminDashboardInner() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const [activeTab, setActiveTab] = useState('events_management');
-  const [viewingEventId, setViewingEventId] = useState(null);
-  const [eventActiveTab, setEventActiveTab] = useState('overview');
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const activeTab = searchParams.get('tab') || 'events_management';
+  const viewingEventId = searchParams.get('event') || null;
+  const eventActiveTab = searchParams.get('eventTab') || 'overview';
+
+  const setActiveTab = (tab) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', tab);
+    newParams.delete('event');
+    newParams.delete('eventTab');
+    setSearchParams(newParams);
+  };
+
+  const setViewingEventId = (id) => {
+    if (id) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.set('tab', 'events_management');
+      newParams.set('event', id);
+      newParams.set('eventTab', 'overview');
+      setSearchParams(newParams);
+    } else {
+      if (window.history.state && window.history.state.idx > 0) {
+        navigate(-1);
+      } else {
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('event');
+        newParams.delete('eventTab');
+        setSearchParams(newParams);
+      }
+    }
+  };
+
+  const setEventActiveTab = (eventTab) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('eventTab', eventTab);
+    setSearchParams(newParams);
+  };
+  
+  const showSettingsModal = searchParams.get('view') === 'settings';
+
+  const handleCloseModal = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const toast = useToast();
   const confirm = useConfirm();
   const { user, logout } = useAuth();
@@ -3064,6 +3128,17 @@ function AdminDashboardInner() {
 
   // Login is now handled by the separate /login page and AuthContext
 
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full bg-white flex items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-4">
+          <img src="/logo.png" alt="EventSphere Logo" className="w-16 h-16 animate-pulse" />
+          <p className="text-slate-500 text-sm font-serif">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen w-full bg-theme-bg z-10 relative overflow-hidden font-sans">
 
@@ -3158,7 +3233,11 @@ function AdminDashboardInner() {
           </div>
           <div className="flex items-center space-x-4 relative z-10">
             <button 
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.set('view', 'settings');
+                setSearchParams(newParams);
+              }}
               className="p-2 text-theme-text/60 hover:text-theme-text rounded-sm hover:bg-white/[0.05] border border-transparent hover:border-gray-100 transition-all"
             >
               <Settings className="w-5 h-5" />
@@ -3188,7 +3267,7 @@ function AdminDashboardInner() {
       </main>
 
       {showSettingsModal && (
-        <UserProfileSettings onClose={() => setShowSettingsModal(false)} />
+        <UserProfileSettings onClose={() => handleCloseModal()} />
       )}
     </div>
   );

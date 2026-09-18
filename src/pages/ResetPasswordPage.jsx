@@ -50,7 +50,13 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
       <button 
-        onClick={() => navigate('/')} 
+        onClick={() => {
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);
+          } else {
+            navigate('/');
+          }
+        }} 
         className="absolute top-8 left-8 sm:top-12 sm:left-12 flex items-center gap-2 text-sm font-medium text-[#6F6F6F] hover:text-black transition-colors z-20"
       >
         <ArrowLeft size={16} /> Back to Home

@@ -450,16 +450,16 @@ export default function Registration() {
             <div className="text-center">
               <h2 className="text-3xl font-serif font-normal text-[var(--theme-text)] mb-4">Event Not Found</h2>
               <p className="text-[var(--theme-text)]/70 mb-8 font-sans">The event you are looking for does not exist or has been removed.</p>
-              <button onClick={() => navigate('/')} className="px-6 py-3 rounded-none font-serif font-normal transition-colors theme-btn text-white">
-                Return Home
+              <button onClick={() => window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/')} className="px-6 py-3 rounded-none font-serif font-normal transition-colors theme-btn text-white">
+                Go Back
               </button>
             </div>
           ) : !upiConfig && targetEvent.tiers?.some(t => Number(t.price) > 0) ? (
             <div className="text-center">
               <h2 className="text-3xl font-serif font-normal text-red-500 mb-4">Event Not Available</h2>
               <p className="text-[var(--theme-text)]/70 mb-8 font-sans">This event has not been fully configured for payments yet.</p>
-              <button onClick={() => navigate('/')} className="px-6 py-3 rounded-none font-serif font-normal transition-colors theme-btn text-white">
-                Return Home
+              <button onClick={() => window.history.state && window.history.state.idx > 0 ? navigate(-1) : navigate('/')} className="px-6 py-3 rounded-none font-serif font-normal transition-colors theme-btn text-white">
+                Go Back
               </button>
             </div>
           ) : (

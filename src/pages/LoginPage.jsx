@@ -58,12 +58,16 @@ export default function LoginPage({ onNavigate }) {
     try {
       if (tab === 'login') {
         await login(form.email, form.password);
+        const from = location.state?.from?.pathname || "/admin";
+        navigate(from, { replace: true });
       } else if (tab === 'register') {
         const result = await register(form.name, form.email, form.password);
         if (result.requiresVerification) {
           navigate(`/verify-email?email=${encodeURIComponent(form.email)}`);
         } else {
           await login(form.email, form.password);
+          const from = location.state?.from?.pathname || "/admin";
+          navigate(from, { replace: true });
         }
       } else if (tab === 'forgot_password') {
         await forgotPassword(form.email);
@@ -107,7 +111,13 @@ export default function LoginPage({ onNavigate }) {
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
       <button 
-        onClick={() => navigate('/')} 
+        onClick={() => {
+          if (window.history.state && window.history.state.idx > 0) {
+            navigate(-1);
+          } else {
+            navigate('/');
+          }
+        }} 
         className="absolute top-8 left-8 sm:top-12 sm:left-12 flex items-center gap-2 text-sm font-medium text-[#6F6F6F] hover:text-black transition-colors z-20"
       >
         <ArrowLeft size={16} /> Back to Home
