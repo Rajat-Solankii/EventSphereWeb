@@ -280,7 +280,8 @@ function ParticleBackground() {
 
 
 function AttendeeRegisterView({ events, allAttendees }) {
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || 'all');
+  const [selectedEventId, setSelectedEventId] = useState('all');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const activeEvent = selectedEventId === 'all' ? null : (events.find(e => String(e.id) === String(selectedEventId)) || events[0]);
 
   const [attendees, setAttendees] = useState([]);
@@ -342,20 +343,39 @@ function AttendeeRegisterView({ events, allAttendees }) {
           <p className="text-theme-text/60">View and manage registered attendees for your events.</p>
         </div>
 
-        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
-          <select
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 focus:ring-0 cursor-pointer appearance-none outline-none"
-          >
-            <option value="all" className="bg-white">All Events</option>
-            {events.map(e => (
-              <option key={e.id} value={e.id} className="bg-white">{e.title}</option>
-            ))}
-          </select>
-          <div className="px-3 flex items-center justify-center border-l border-gray-100 pointer-events-none text-theme-text/60">
-            <ChevronDown className="w-4 h-4" />
+        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl relative z-50">
+          <div className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 cursor-default">
+            {selectedEventId === 'all' ? 'All Events' : (events.find(e => e.id === selectedEventId)?.title || 'All Events')}
           </div>
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="px-3 flex items-center justify-center border-l border-gray-100 cursor-pointer text-theme-text/60 hover:text-theme-primary transition-colors"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isDropdownOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-[0_8px_32px_rgba(0,0,0,0.1)] rounded-xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 max-h-64 overflow-y-auto">
+                <button 
+                  onClick={() => { setSelectedEventId('all'); setIsDropdownOpen(false); }}
+                  className={`w-full text-left px-4 py-2 text-sm font-mono hover:bg-gray-50 transition-colors ${selectedEventId === 'all' ? 'text-theme-primary font-semibold bg-blue-50/30' : 'text-theme-text'}`}
+                >
+                  All Events
+                </button>
+                {events.map(e => (
+                  <button 
+                    key={e.id}
+                    onClick={() => { setSelectedEventId(e.id); setIsDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm font-mono hover:bg-gray-50 transition-colors ${selectedEventId === e.id ? 'text-theme-primary font-semibold bg-blue-50/30' : 'text-theme-text'}`}
+                  >
+                    {e.title}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -424,7 +444,8 @@ function AttendeeRegisterView({ events, allAttendees }) {
 }
 
 function TransactionsView({ events, allAttendees }) {
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || 'all');
+  const [selectedEventId, setSelectedEventId] = useState('all');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const activeEvent = selectedEventId === 'all' ? null : (events.find(e => String(e.id) === String(selectedEventId)) || events[0]);
   const [transactions, setTransactions] = useState([]);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -464,20 +485,39 @@ function TransactionsView({ events, allAttendees }) {
           <p className="text-theme-text/60">View and manage payment receipts and transactions.</p>
         </div>
 
-        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
-          <select
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 focus:ring-0 cursor-pointer appearance-none outline-none"
-          >
-            <option value="all" className="bg-white">All Events</option>
-            {events.map(e => (
-              <option key={e.id} value={e.id} className="bg-white">{e.title}</option>
-            ))}
-          </select>
-          <div className="px-3 flex items-center justify-center border-l border-gray-100 pointer-events-none text-theme-text/60">
-            <ChevronDown className="w-4 h-4" />
+        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl relative z-50">
+          <div className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 cursor-default">
+            {selectedEventId === 'all' ? 'All Events' : (events.find(e => e.id === selectedEventId)?.title || 'All Events')}
           </div>
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="px-3 flex items-center justify-center border-l border-gray-100 cursor-pointer text-theme-text/60 hover:text-theme-primary transition-colors"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isDropdownOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-[0_8px_32px_rgba(0,0,0,0.1)] rounded-xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 max-h-64 overflow-y-auto">
+                <button 
+                  onClick={() => { setSelectedEventId('all'); setIsDropdownOpen(false); }}
+                  className={`w-full text-left px-4 py-2 text-sm font-mono hover:bg-gray-50 transition-colors ${selectedEventId === 'all' ? 'text-theme-primary font-semibold bg-blue-50/30' : 'text-theme-text'}`}
+                >
+                  All Events
+                </button>
+                {events.map(e => (
+                  <button 
+                    key={e.id}
+                    onClick={() => { setSelectedEventId(e.id); setIsDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm font-mono hover:bg-gray-50 transition-colors ${selectedEventId === e.id ? 'text-theme-primary font-semibold bg-blue-50/30' : 'text-theme-text'}`}
+                  >
+                    {e.title}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -560,17 +600,10 @@ function TransactionsView({ events, allAttendees }) {
 }
 
 function LiveDashboardView({ events, allAttendees }) {
-  const [selectedEventId, setSelectedEventId] = useState(events[0]?.id || null);
+  const [selectedEventId, setSelectedEventId] = useState('all');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    if (events.length > 0 && !selectedEventId) {
-      setSelectedEventId(events[0].id);
-    }
-  }, [events, selectedEventId]);
-
-  const activeEvent = events.find(e => String(e.id) === String(selectedEventId)) || events[0];
-
-  if (!activeEvent || events.length === 0) {
+  if (!events || events.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4 animate-in fade-in duration-700">
         <div className="w-24 h-24 mb-6 rounded-none bg-gray-50 flex items-center justify-center border border-gray-200">
@@ -584,8 +617,9 @@ function LiveDashboardView({ events, allAttendees }) {
     );
   }
 
-  const totalCapacity = activeEvent.tiers.reduce((sum, t) => sum + parseInt(t.capacity || 0), 0);
-  const totalAvailable = activeEvent.tiers.reduce((sum, t) => sum + parseInt(t.available || 0), 0);
+  const activeEvents = selectedEventId === 'all' ? events : events.filter(e => String(e.id) === String(selectedEventId));
+  const totalCapacity = activeEvents.reduce((sum, e) => sum + e.tiers.reduce((s, t) => s + parseInt(t.capacity || 0), 0), 0);
+  const totalAvailable = activeEvents.reduce((sum, e) => sum + e.tiers.reduce((s, t) => s + parseInt(t.available || 0), 0), 0);
   const totalBooked = totalCapacity - totalAvailable;
 
   return (
@@ -597,19 +631,39 @@ function LiveDashboardView({ events, allAttendees }) {
           <p className="text-theme-text/60">Real-time attendance and capacity metrics.</p>
         </div>
 
-        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl">
-          <select
-            value={selectedEventId}
-            onChange={(e) => setSelectedEventId(e.target.value)}
-            className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 focus:ring-0 cursor-pointer appearance-none outline-none"
-          >
-            {events.map(e => (
-              <option key={e.id} value={e.id} className="bg-white">{e.title}</option>
-            ))}
-          </select>
-          <div className="pointer-events-none flex items-center pr-3 text-theme-text/50">
-            <ChevronDown className="w-4 h-4" />
+        <div className="glass-panel border border-gray-100 shadow-[0_8px_32px_rgba(151,161,218,0.2)] rounded-none p-1 flex bg-white/50 backdrop-blur-xl relative z-50">
+          <div className="bg-transparent border-none text-theme-text font-mono text-sm py-2 px-4 cursor-default">
+            {selectedEventId === 'all' ? 'All Events' : (events.find(e => e.id === selectedEventId)?.title || 'All Events')}
           </div>
+          <button 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="px-3 flex items-center justify-center border-l border-gray-100 cursor-pointer text-theme-text/60 hover:text-theme-primary transition-colors"
+          >
+            <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
+          
+          {isDropdownOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setIsDropdownOpen(false)} />
+              <div className="absolute top-full right-0 mt-2 w-64 bg-white border border-gray-100 shadow-[0_8px_32px_rgba(0,0,0,0.1)] rounded-xl z-50 overflow-hidden py-1 animate-in fade-in slide-in-from-top-2 max-h-64 overflow-y-auto">
+                <button 
+                  onClick={() => { setSelectedEventId('all'); setIsDropdownOpen(false); }}
+                  className={`w-full text-left px-4 py-2 text-sm font-mono hover:bg-gray-50 transition-colors ${selectedEventId === 'all' ? 'text-theme-primary font-semibold bg-blue-50/30' : 'text-theme-text'}`}
+                >
+                  All Events
+                </button>
+                {events.map(e => (
+                  <button 
+                    key={e.id}
+                    onClick={() => { setSelectedEventId(e.id); setIsDropdownOpen(false); }}
+                    className={`w-full text-left px-4 py-2 text-sm font-mono hover:bg-gray-50 transition-colors ${selectedEventId === e.id ? 'text-theme-primary font-semibold bg-blue-50/30' : 'text-theme-text'}`}
+                  >
+                    {e.title}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -632,7 +686,7 @@ function LiveDashboardView({ events, allAttendees }) {
       <div className="bg-white/40 backdrop-blur-xl border border-gray-100 shadow-[0_0_0_1px_rgba(79,178,192,0.1),0_8px_32px_rgba(151,161,218,0.2)] rounded-none overflow-hidden mt-8">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-theme-bg/20">
           <h3 className="font-serif font-normal text-theme-text tracking-wide">ACTIVE GUEST LOG</h3>
-          <span className="font-mono text-xs text-black bg-gray-100 px-2 py-1 rounded border border-gray-200 shadow-[0_0_10px_rgba(99,102,241,0.2)]">LIVE • {allAttendees.filter(a => String(a.eventId) === String(activeEvent.id)).length} REGISTRATIONS</span>
+          <span className="font-mono text-xs text-black bg-gray-100 px-2 py-1 rounded border border-gray-200 shadow-[0_0_10px_rgba(99,102,241,0.2)]">LIVE • {allAttendees.filter(a => selectedEventId === 'all' || String(a.eventId) === String(selectedEventId)).length} REGISTRATIONS</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -645,7 +699,7 @@ function LiveDashboardView({ events, allAttendees }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-theme-primary/10">
-              {allAttendees.filter(a => String(a.eventId) === String(activeEvent.id)).map(log => (
+              {allAttendees.filter(a => selectedEventId === 'all' || String(a.eventId) === String(selectedEventId)).map(log => (
                 <tr key={log.passId} className="hover:bg-black/5 transition-colors group">
                   <td className="px-6 py-4 font-mono text-theme-text/50 text-sm group-hover:text-black transition-colors">{log.passId}</td>
                   <td className="px-6 py-4 text-theme-text font-medium">{log.name}</td>
