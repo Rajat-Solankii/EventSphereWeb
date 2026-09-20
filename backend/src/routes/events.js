@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const { verifyToken, requireRole, requireEventAccess } = require('../middleware/auth');
 const nodemailer = require('nodemailer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { getIO } = require('../socket');
 
 function getSmtpTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -171,7 +172,7 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
     }
 
     try {
-      await prisma.notification.create({
+      const newNotification = await prisma.notification.create({
         data: {
           user_id: req.user.id,
           title: 'Event Created',
@@ -179,6 +180,7 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
           type: 'SUCCESS'
         }
       });
+      getIO().to(req.user.id).emit('new_notification', newNotification);
     } catch (e) {
       console.error('Failed to create notification', e);
     }

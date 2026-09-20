@@ -21,6 +21,7 @@ export default function UserManagement() {
   // Fetch users from admin API
   const fetchUsers = async () => {
     try {
+      setError(null);
       setLoading(true);
       const res = await fetch('http://localhost:3000/api/admin/users', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }

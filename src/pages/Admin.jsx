@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import TemplateDesigner from '../components/TemplateDesigner';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import UserManagement from '../components/admin/UserManagement';
 import jsQR from 'jsqr';
@@ -831,51 +832,68 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
     }
   }, [isOpen, currentSessionId]);
 
+  const { socket } = useSocket();
+  const [streamingMessage, setStreamingMessage] = useState('');
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleChunk = ({ chunk }) => {
+      setStreamingMessage(prev => prev + chunk);
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    const handleDone = ({ fullReply, sessionId, parsedJson }) => {
+      setStreamingMessage('');
+      setIsProcessing(false);
+      
+      if (parsedJson && parsedJson.event_ready) {
+        if (sessionId) setCurrentSessionId(sessionId);
+        toast('AI has finished preparing your event details!', 'success');
+        onEventReady({ ...parsedJson.event_data, ai_session_id: sessionId });
+        onClose();
+        setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
+      } else {
+        if (sessionId && sessionId !== currentSessionId) {
+          setCurrentSessionId(sessionId);
+          fetchSessions();
+        }
+        setMessages(prev => [...prev, { role: 'assistant', content: fullReply }]);
+      }
+    };
+
+    const handleError = ({ error }) => {
+      toast(error || 'Failed to communicate with AI.', 'error');
+      setStreamingMessage('');
+      setIsProcessing(false);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error}` }]);
+    };
+
+    socket.on('ai_chat_chunk', handleChunk);
+    socket.on('ai_chat_done', handleDone);
+    socket.on('ai_chat_error', handleError);
+
+    return () => {
+      socket.off('ai_chat_chunk', handleChunk);
+      socket.off('ai_chat_done', handleDone);
+      socket.off('ai_chat_error', handleError);
+    };
+  }, [socket, currentSessionId, fetchSessions, messages, onClose, onEventReady, toast]);
+
   if (!isOpen) return null;
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if ((!input.trim() && !selectedImage) || isProcessing) return;
+    if ((!input.trim() && !selectedImage) || isProcessing || !socket) return;
 
     const newMessages = [...messages, { role: 'user', content: input.trim(), image: selectedImage }];
     setMessages(newMessages);
     setInput('');
     setSelectedImage(null);
     setIsProcessing(true);
+    setStreamingMessage('');
 
-    try {
-      const res = await fetch('http://localhost:3000/api/v1/events/ai-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('es_token')}`
-        },
-        body: JSON.stringify({ messages: newMessages, sessionId: currentSessionId })
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to communicate with AI.');
-      }
-
-      if (data.is_ready) {
-        if (data.sessionId) setCurrentSessionId(data.sessionId);
-        toast('AI has finished preparing your event details!', 'success');
-        onEventReady({ ...data.event_data, ai_session_id: data.sessionId });
-        onClose();
-        setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
-      } else {
-        if (data.sessionId && data.sessionId !== currentSessionId) {
-          setCurrentSessionId(data.sessionId);
-          fetchSessions(); // Refresh list to get new chat title
-        }
-        setMessages([...newMessages, { role: 'assistant', content: data.message }]);
-      }
-    } catch (err) {
-      toast(err.message, 'error');
-      setMessages([...newMessages, { role: 'assistant', content: `Sorry, I encountered an error: ${err.message}` }]);
-    } finally {
-      setIsProcessing(false);
-    }
+    socket.emit('ai_chat_message', { messages: newMessages, sessionId: currentSessionId });
   };
 
   const handleNewChat = () => {
@@ -941,7 +959,14 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
                   </div>
                 </div>
               ))}
-              {isProcessing && (
+              {streamingMessage && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] bg-white border border-slate-200 text-slate-800 rounded-none rounded-bl-sm px-4 py-3 text-sm shadow-sm">
+                    {formatMessage(streamingMessage)}
+                  </div>
+                </div>
+              )}
+              {isProcessing && !streamingMessage && (
                 <div className="flex justify-start">
                   <div className="bg-white border border-slate-200 text-slate-500 rounded-none rounded-bl-sm px-4 py-3 text-sm shadow-sm flex items-center gap-2">
                     <span className="w-2 h-2 bg-gray-500 rounded-none animate-bounce"></span>
@@ -950,9 +975,9 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
                   </div>
                 </div>
               )}
+              <div ref={chatEndRef} />
             </>
           )}
-          <div ref={chatEndRef} />
         </div>
 
         {selectedImage && (
@@ -1155,8 +1180,25 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   };
 
   const [editingEventId, setEditingEventId] = useState(null);
-  const [activeTierId, setActiveTierId] = useState(null);
-  const [isDesigningCover, setIsDesigningCover] = useState(false);
+  
+  // Routing for Designer
+  const designerMode = searchParams.get('designer'); // 'cover' or 'ticket'
+  const activeTierId = designerMode === 'ticket' ? searchParams.get('tierId') : null;
+  const isDesigningCover = designerMode === 'cover';
+  
+  const openDesigner = (mode, tierId = null) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('designer', mode);
+    if (tierId) newParams.set('tierId', tierId);
+    setSearchParams(newParams);
+  };
+  
+  const closeDesigner = () => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('designer');
+    newParams.delete('tierId');
+    setSearchParams(newParams);
+  };
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [formData, setFormData] = useState({
     title: '', date: '', end_date: '', venue: '', image: '', currency: 'INR',
@@ -1385,8 +1427,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const handleEdit = (event) => {
     setFormData({ ...event, currency: event.page_config?.currency || 'INR' });
     setEditingEventId(event.id);
-    setSearchParams({ view: 'edit' });
-    setViewingEventId(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('view', 'edit');
+    newParams.delete('event');
+    newParams.delete('eventTab');
+    setSearchParams(newParams);
   };
 
 
@@ -2613,7 +2658,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 )}
                 <button
                   type="button"
-                  onClick={() => setIsDesigningCover(true)}
+                  onClick={() => openDesigner('cover')}
                   className="px-5 py-3 bg-theme-bg hover:bg-slate-700 text-theme-text rounded-none text-sm font-sans font-medium transition-all flex items-center space-x-2 border border-gray-200"
                 >
                   <ImageIcon className="w-5 h-5 text-black" />
@@ -2704,7 +2749,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                       {tier._previewTicket && <img src={tier._previewTicket} alt="Preview" className="w-16 h-10 object-cover rounded border border-slate-600" />}
                       <button
                         type="button"
-                        onClick={() => setActiveTierId(tier.id)}
+                        onClick={() => openDesigner('ticket', tier.id)}
                         className="px-4 py-2 bg-gray-100 hover:bg-black/20 text-black border border-gray-200 rounded-sm text-sm font-serif font-normal transition-all flex items-center space-x-2"
                       >
                         <Ticket className="w-4 h-4" />
@@ -2739,9 +2784,9 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 ...prev,
                 tiers: prev.tiers.map(t => t.id === activeTierId ? { ...t, template: templateData, _previewTicket: dataUrl } : t)
               }));
-              setActiveTierId(null);
+              closeDesigner();
             }}
-            onCancel={() => setActiveTierId(null)}
+            onCancel={closeDesigner}
           />,
           document.body
         )}
@@ -2755,9 +2800,9 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             initialTemplate={formData._aiCoverTemplate}
             onSave={({ dataUrl, templateData }) => {
               setFormData({ ...formData, image: dataUrl, _aiCoverTemplate: templateData });
-              setIsDesigningCover(false);
+              closeDesigner();
             }}
-            onCancel={() => setIsDesigningCover(false)}
+            onCancel={closeDesigner}
           />,
           document.body
         )}
@@ -3000,6 +3045,36 @@ function AdminDashboardInner() {
   const [allAttendees, setAllAttendees] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (socket) {
+      const handleNewNotification = (notification) => {
+        setNotifications((prev) => [notification, ...prev]);
+        toast.show(`New notification: ${notification.title}`, 'info');
+      };
+      socket.on('new_notification', handleNewNotification);
+      return () => {
+        socket.off('new_notification', handleNewNotification);
+      };
+    }
+  }, [socket, toast]);
+
+  useEffect(() => {
+    if (socket && events.length > 0) {
+      events.forEach(e => socket.emit('join_event', e.id));
+      
+      const handleTicketScanned = ({ ticketId, status }) => {
+        setAllAttendees(prev => prev.map(a => a.id === ticketId ? { ...a, status } : a));
+      };
+
+      socket.on('ticket_scanned', handleTicketScanned);
+      return () => {
+        events.forEach(e => socket.emit('leave_event', e.id));
+        socket.off('ticket_scanned', handleTicketScanned);
+      };
+    }
+  }, [socket, events]);
 
   const fetchNotifications = async () => {
     try {

@@ -6,7 +6,7 @@ import {
   QrCode, Minus, AlignLeft, AlignCenter, AlignRight, LayoutTemplate,
   RotateCw, Palette, Calendar, Clock, MapPin, User, Tag, Sparkles, Loader,
   Upload, Search, Star, Triangle, Hexagon, Heart, Zap, Diamond,
-  ArrowRight, ChevronUp, ChevronDown as ChevDown, Lock
+  ArrowRight, ChevronUp, ChevronDown as ChevDown, Lock, Bot, Loader2
 } from 'lucide-react';
 import { STOCK_IMAGES } from '../data/stockImages';
 
@@ -86,6 +86,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
   const [bgOverlayOpacity, setBgOverlayOpacity] = useState(resolvedTemplate?.bgOverlayOpacity ?? 0.4);
   const [activeTab, setActiveTab] = useState('background');
   const [isExporting, setIsExporting] = useState(false);
+  const [guides, setGuides] = useState([]);
 
   // Unsplash search state
   const [unsplashQuery, setUnsplashQuery] = useState('');
@@ -95,11 +96,85 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
     }));
   });
   const [unsplashLoading, setUnsplashLoading] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiError, setAiError] = useState(null);
+
+  const handleGenerateTemplate = async () => {
+    if (!aiPrompt.trim()) return;
+    setIsGenerating(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/ai/generate-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: aiPrompt, 
+          mode,
+          context: {
+            title: defaultTitle,
+            date: defaultDate,
+            venue: defaultVenue
+          }
+        })
+      });
+      if (!response.ok) throw new Error('Failed to generate template');
+      const data = await response.json();
+      
+      if (data.canvasBg) setCanvasBg(data.canvasBg);
+      if (data.bgImage) setBgImage(data.bgImage);
+      if (data.bgGradient) setBgGradient(data.bgGradient);
+      if (data.bgOverlayOpacity !== undefined) setBgOverlayOpacity(data.bgOverlayOpacity);
+      
+      // Fetch background image automatically if unsplashQuery is provided
+      if (data.unsplashQuery) {
+        setUnsplashQuery(data.unsplashQuery);
+        const images = await searchUnsplash(data.unsplashQuery);
+        if (images && images.length > 0) {
+          // Pick a random image from the top 8 results for variety
+          const maxIndex = Math.min(images.length, 8);
+          const randomIndex = Math.floor(Math.random() * maxIndex);
+          setBgImage(images[randomIndex].url);
+        }
+      }
+      
+      // Keep QR code if it exists
+      const qrElement = elements.find(e => e.type === 'qrcode');
+      const newElements = data.elements || [];
+      if (qrElement) newElements.push(qrElement);
+      else if (mode === 'ticket') {
+         newElements.push({ id: crypto.randomUUID(), type: 'qrcode', x: canvasWidth - 140, y: canvasHeight - 140, width: 100, height: 100, _locked: true, bgColor: '#ffffff' });
+      }
+      setElements(newElements);
+      setActiveTab('background'); // Switch back to see result
+      setAiPrompt('');
+    } catch (err) {
+      console.error(err);
+      setAiError('AI Generation failed. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
 
   const markCustom = () => {};
+
+  // ─── Keyboard Shortcuts ───
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+        if (e.target.tagName.toLowerCase() === 'input' || e.target.tagName.toLowerCase() === 'textarea') return;
+        const el = elements.find(el => el.id === selectedId);
+        if (el && !el._locked) {
+          setElements(prev => prev.filter(el => el.id !== selectedId));
+          setSelectedId(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedId, elements]);
 
   // ─── Photo Search ───
   const searchUnsplash = useCallback(async (overrideQuery = null) => {
@@ -128,7 +203,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
         if (results.length < 12) {
           try {
             const limit = 12 - results.length;
-            const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:bitmap|drawing%20${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*`;
+            const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:bitmap%20${encodeURIComponent(query)}&gsrnamespace=6&gsrlimit=${limit}&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*`;
             
             const res = await fetch(searchUrl);
             const data = await res.json();
@@ -161,8 +236,10 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
       }
       
       setUnsplashResults(results);
+      return results;
     } catch (e) {
       console.error('Photo search failed:', e);
+      return [];
     } finally {
       setUnsplashLoading(false);
     }
@@ -284,14 +361,15 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
   const canvasHeight = mode === 'cover' ? 500 : 450;
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl flex text-slate-200">
+    <div className="fixed inset-0 z-[100] bg-zinc-950/95 backdrop-blur-xl flex text-zinc-200">
       
       {/* ─── Icon Sidebar ─── */}
-      <div className="w-[72px] bg-slate-950 border-r border-slate-800/60 flex flex-col items-center py-5 space-y-1 z-20">
-        <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-5">
-          {mode === 'ticket' ? <Ticket className="w-4 h-4 text-white" /> : <ImageIcon className="w-4 h-4 text-white" />}
+      <div className="w-[72px] bg-zinc-950 border-r border-zinc-800/60 flex flex-col items-center py-5 space-y-1 z-20">
+        <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-lg shadow-white/20 mb-5">
+          {mode === 'ticket' ? <Ticket className="w-4 h-4 text-black" /> : <ImageIcon className="w-4 h-4 text-black" />}
         </div>
         
+        <SidebarTab icon={<Bot />} label="AI" active={activeTab === 'ai'} onClick={() => setActiveTab('ai')} />
         <SidebarTab icon={<Palette />} label="BG" active={activeTab === 'background'} onClick={() => setActiveTab('background')} />
         <SidebarTab icon={<Type />} label="Text" active={activeTab === 'text'} onClick={() => setActiveTab('text')} />
         <SidebarTab icon={<Square />} label="Shapes" active={activeTab === 'shapes'} onClick={() => setActiveTab('shapes')} />
@@ -301,10 +379,10 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
       </div>
 
       {/* ─── Panel ─── */}
-      <div className="w-[280px] bg-slate-900/95 border-r border-slate-800/60 flex flex-col h-full shadow-2xl z-10">
-        <div className="px-5 py-4 border-b border-slate-800/60 flex justify-between items-center">
+      <div className="w-[280px] bg-zinc-900/95 border-r border-zinc-800/60 flex flex-col h-full shadow-2xl z-10">
+        <div className="px-5 py-4 border-b border-zinc-800/60 flex justify-between items-center">
           <h3 className="text-base font-bold text-white capitalize">{activeTab === 'photos' ? 'Search Photos' : activeTab}</h3>
-          <button onClick={onCancel} className="text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 p-1.5 rounded-lg transition-colors"><X className="w-4 h-4"/></button>
+          <button onClick={onCancel} className="text-zinc-400 hover:text-white bg-zinc-800/80 hover:bg-zinc-700 p-1.5 rounded-lg transition-colors"><X className="w-4 h-4"/></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
@@ -313,16 +391,16 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
           {activeTab === 'background' && (
             <div className="space-y-5">
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Background Color</label>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Background Color</label>
                 <div className="flex items-center gap-2">
-                  <input type="color" value={canvasBg} onChange={(e) => { setCanvasBg(e.target.value); setBgGradient(''); }} className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-slate-700 p-0.5 flex-shrink-0" />
-                  <input type="text" value={canvasBg} onChange={(e) => setCanvasBg(e.target.value)} className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-mono" />
+                  <input type="color" value={canvasBg} onChange={(e) => { setCanvasBg(e.target.value); setBgGradient(''); }} className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5 flex-shrink-0" />
+                  <input type="text" value={canvasBg} onChange={(e) => setCanvasBg(e.target.value)} className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white font-mono" />
                 </div>
               </div>
               
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Gradient</label>
-                <select value={bgGradient} onChange={(e) => setBgGradient(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all">
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Gradient</label>
+                <select value={bgGradient} onChange={(e) => setBgGradient(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-white focus:ring-1 focus:ring-white/50 transition-all">
                   <option value="">None (Solid Color)</option>
                   <option value="linear-gradient(135deg, #FF007B, #3B00FF)">Neon Purple-Pink</option>
                   <option value="linear-gradient(to right, #0f172a, #1e293b, #0f172a)">Cinematic Dark</option>
@@ -337,14 +415,14 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
 
               {bgImage && (
                 <div>
-                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Background Overlay</label>
+                  <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Background Overlay</label>
                   <input 
                     type="range" min="0" max="0.9" step="0.05" 
                     value={bgOverlayOpacity} 
                     onChange={e => setBgOverlayOpacity(parseFloat(e.target.value))}
-                    className="w-full accent-indigo-500" 
+                    className="w-full accent-white" 
                   />
-                  <div className="flex justify-between text-[10px] text-slate-500 mt-1">
+                  <div className="flex justify-between text-[10px] text-zinc-500 mt-1">
                     <span>Light</span><span>Dark</span>
                   </div>
                 </div>
@@ -357,17 +435,17 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
               )}
 
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Color Palettes</label>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 block">Color Palettes</label>
                 <div className="space-y-3">
                   {COLOR_PALETTES.map(palette => (
                     <div key={palette.name}>
-                      <p className="text-[11px] text-slate-500 mb-1.5 font-medium">{palette.name}</p>
+                      <p className="text-[11px] text-zinc-500 mb-1.5 font-medium">{palette.name}</p>
                       <div className="flex gap-1.5">
                         {palette.colors.map((color, i) => (
                           <button
                             key={i}
                             onClick={() => { setCanvasBg(color); setBgGradient(''); setBgImage(''); }}
-                            className="w-8 h-8 rounded-lg border border-slate-700/50 hover:scale-110 hover:ring-2 hover:ring-indigo-500 transition-all shadow-sm"
+                            className="w-8 h-8 rounded-lg border border-zinc-700/50 hover:scale-110 hover:ring-2 hover:ring-white transition-all shadow-sm"
                             style={{ backgroundColor: color }}
                             title={color}
                           />
@@ -383,17 +461,17 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
           {/* ─── Text Tab ─── */}
           {activeTab === 'text' && (
             <div className="space-y-3">
-              <button onClick={() => addText('heading')} className="w-full p-4 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 rounded-xl transition-all text-left hover:border-indigo-500/50 group">
-                <span className="text-2xl font-bold text-white block group-hover:text-indigo-300 transition-colors">Add a heading</span>
+              <button onClick={() => addText('heading')} className="w-full p-4 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 rounded-xl transition-all text-left hover:border-white/50 group">
+                <span className="text-2xl font-bold text-white block group-hover:text-white transition-colors">Add a heading</span>
               </button>
-              <button onClick={() => addText('subheading')} className="w-full p-4 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 rounded-xl transition-all text-left hover:border-indigo-500/50 group">
-                <span className="text-lg font-semibold text-slate-200 block group-hover:text-indigo-300 transition-colors">Add a subheading</span>
+              <button onClick={() => addText('subheading')} className="w-full p-4 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 rounded-xl transition-all text-left hover:border-white/50 group">
+                <span className="text-lg font-semibold text-zinc-200 block group-hover:text-white transition-colors">Add a subheading</span>
               </button>
-              <button onClick={() => addText('body')} className="w-full p-4 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 rounded-xl transition-all text-left hover:border-indigo-500/50 group">
-                <span className="text-sm text-slate-300 block group-hover:text-indigo-300 transition-colors">Add body text</span>
+              <button onClick={() => addText('body')} className="w-full p-4 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 rounded-xl transition-all text-left hover:border-white/50 group">
+                <span className="text-sm text-zinc-300 block group-hover:text-white transition-colors">Add body text</span>
               </button>
-              <button onClick={() => addText('label')} className="w-full p-4 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 rounded-xl transition-all text-left hover:border-indigo-500/50 group">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest block group-hover:text-indigo-300 transition-colors">ADD A LABEL</span>
+              <button onClick={() => addText('label')} className="w-full p-4 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 rounded-xl transition-all text-left hover:border-white/50 group">
+                <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest block group-hover:text-white transition-colors">ADD A LABEL</span>
               </button>
             </div>
           )}
@@ -411,7 +489,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
           {activeTab === 'elements' && (
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Icons</label>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 block">Icons</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { type: 'calendar', icon: <Calendar />, label: 'Calendar' },
@@ -427,7 +505,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                     <button 
                       key={item.type}
                       onClick={() => addIcon(item.type)}
-                      className="flex flex-col items-center justify-center p-3 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 rounded-xl transition-all text-slate-300 hover:text-indigo-400 hover:border-indigo-500/50"
+                      className="flex flex-col items-center justify-center p-3 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 rounded-xl transition-all text-zinc-300 hover:text-white hover:border-white/50"
                     >
                       <div className="w-5 h-5 mb-1.5">{item.icon}</div>
                       <span className="text-[10px] font-medium">{item.label}</span>
@@ -437,14 +515,14 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Quick Colors</label>
-                <p className="text-[11px] text-slate-500 mb-2">Click to copy a color, then use it in element properties.</p>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 block">Quick Colors</label>
+                <p className="text-[11px] text-zinc-500 mb-2">Click to copy a color, then use it in element properties.</p>
                 <div className="flex flex-wrap gap-1.5">
                   {['#ffffff', '#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1'].map(c => (
                     <button
                       key={c}
                       onClick={() => navigator.clipboard.writeText(c)}
-                      className="w-7 h-7 rounded-md border border-slate-700/50 hover:scale-125 transition-transform"
+                      className="w-7 h-7 rounded-md border border-zinc-700/50 hover:scale-125 transition-transform"
                       style={{ backgroundColor: c }}
                       title={`Copy ${c}`}
                     />
@@ -460,13 +538,45 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
               <input type="file" ref={fileInputRef} accept="image/*" onChange={handleFileUpload} className="hidden" />
               <button 
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full p-8 flex flex-col items-center justify-center border-2 border-dashed border-slate-600 hover:border-indigo-500 rounded-2xl transition-all bg-slate-800/30 hover:bg-indigo-500/5 group cursor-pointer"
+                className="w-full p-8 flex flex-col items-center justify-center border-2 border-dashed border-zinc-600 hover:border-white rounded-2xl transition-all bg-zinc-800/30 hover:bg-zinc-200/5 group cursor-pointer"
               >
-                <Upload className="w-10 h-10 text-slate-400 mb-3 group-hover:text-indigo-400 transition-colors" />
-                <span className="font-bold text-sm text-slate-300 group-hover:text-indigo-300 transition-colors">Upload Image</span>
-                <span className="text-xs text-slate-500 mt-1">PNG, JPG, SVG up to 5MB</span>
+                <Upload className="w-10 h-10 text-zinc-400 mb-3 group-hover:text-white transition-colors" />
+                <span className="font-bold text-sm text-zinc-300 group-hover:text-white transition-colors">Upload Image</span>
+                <span className="text-xs text-zinc-500 mt-1">PNG, JPG, SVG up to 5MB</span>
               </button>
-              <p className="text-[11px] text-slate-500 text-center">Uploaded images are added as draggable elements on the canvas.</p>
+              <p className="text-[11px] text-zinc-500 text-center">Uploaded images are added as draggable elements on the canvas.</p>
+            </div>
+          )}
+
+          {/* ─── AI Tab ─── */}
+          {activeTab === 'ai' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-2">
+                <p className="text-xs text-indigo-300">Describe the design you want. The AI will generate a layout, colors, and styling matching your prompt.</p>
+              </div>
+              {aiError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-start gap-2">
+                  <X className="w-4 h-4 shrink-0 mt-0.5 cursor-pointer" onClick={() => setAiError(null)} />
+                  <p>{aiError}</p>
+                </div>
+              )}
+              <div>
+                <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2 block">Prompt</label>
+                <textarea 
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="e.g. A neon cyberpunk music festival ticket with glowing pink accents..."
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-3 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 min-h-[120px] resize-none"
+                />
+              </div>
+              <button 
+                onClick={handleGenerateTemplate}
+                disabled={isGenerating || !aiPrompt.trim()}
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:hover:bg-indigo-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {isGenerating ? 'Generating...' : 'Generate with AI'}
+              </button>
             </div>
           )}
 
@@ -480,12 +590,12 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                   onChange={e => setUnsplashQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchUnsplash()}
                   placeholder="Search photos..."
-                  className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                  className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-500 focus:border-white focus:ring-1 focus:ring-white/50 transition-all"
                 />
                 <button 
                   onClick={searchUnsplash} 
                   disabled={unsplashLoading}
-                  className="px-3 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-white transition-colors flex items-center"
+                  className="px-3 bg-white text-black font-bold hover:bg-zinc-200 rounded-lg transition-colors flex items-center"
                 >
                   {unsplashLoading ? <Loader className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </button>
@@ -496,7 +606,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                   <button 
                     key={tag}
                     onClick={() => { setUnsplashQuery(tag); searchUnsplash(tag); }}
-                    className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-slate-800 border border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                    className="px-2.5 py-1 text-[10px] font-bold rounded-full bg-zinc-800 border border-zinc-700/50 text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors"
                   >
                     {tag}
                   </button>
@@ -505,13 +615,13 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
 
               {unsplashResults.length > 0 && (
                 <div>
-                  <p className="text-[11px] text-slate-500 mb-2">Click to set as background, or drag onto canvas.</p>
+                  <p className="text-[11px] text-zinc-500 mb-2">Click to set as background, or drag onto canvas.</p>
                   <div className="grid grid-cols-2 gap-2 pb-16">
                     {unsplashResults.map(img => (
                       <button
                         key={img.id}
                         onClick={() => { setBgImage(img.url); setCanvasBg('transparent'); setBgGradient(''); }}
-                        className="w-full h-24 rounded-lg overflow-hidden border-2 border-transparent hover:border-indigo-500 transition-all relative group"
+                        className="w-full h-24 rounded-lg overflow-hidden border-2 border-transparent hover:border-white transition-all relative group"
                       >
                         <img src={img.thumb} alt="Photo" className="w-full h-full object-cover" loading="lazy" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
@@ -524,7 +634,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
               )}
 
               {unsplashResults.length === 0 && !unsplashLoading && (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-zinc-500">
                   <Search className="w-10 h-10 mx-auto mb-3 opacity-30" />
                   <p className="text-sm font-medium">Search for photos</p>
                   <p className="text-xs mt-1">Type a keyword and press Enter</p>
@@ -532,181 +642,12 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
               )}
             </div>
           )}
-
-          {/* ─── Properties / Canvas Settings ─── */}
-          <div className="h-px bg-slate-800/60 w-full" />
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 block">
-              {selectedElement ? (selectedElement._locked ? '🔒 QR Code (Required)' : 'Properties') : 'Canvas Settings'}
-            </label>
-
-            {!selectedElement ? (
-              <div className="p-3 bg-slate-800/40 rounded-xl border border-slate-700/30">
-                <p className="text-xs text-slate-500">Select an element on the canvas to edit its properties.</p>
-              </div>
-            ) : (
-              <div className="space-y-4 animate-in fade-in duration-200">
-                {selectedElement.type === 'text' && (
-                  <>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Content</label>
-                      <textarea 
-                        value={selectedElement.content} onChange={(e) => updateElement(selectedId, { content: e.target.value })}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 min-h-[60px] transition-all"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Font Size</label>
-                        <input type="number" value={selectedElement.fontSize} onChange={(e) => updateElement(selectedId, { fontSize: Number(e.target.value) })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Color</label>
-                        <input type="color" value={selectedElement.color} onChange={(e) => updateElement(selectedId, { color: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-slate-700 p-0.5" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Font Family</label>
-                      <select 
-                        value={selectedElement.fontFamily} onChange={(e) => updateElement(selectedId, { fontFamily: e.target.value })}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500"
-                      >
-                        <option value="Inter">Inter</option>
-                        <option value="Outfit">Outfit</option>
-                        <option value="Playfair Display">Playfair Display</option>
-                        <option value="Arial">Arial</option>
-                        <option value="Georgia">Georgia</option>
-                        <option value="Times New Roman">Times New Roman</option>
-                        <option value="Courier New">Courier New</option>
-                        <option value="Verdana">Verdana</option>
-                        <option value="Impact">Impact</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Weight</label>
-                        <select 
-                          value={selectedElement.fontWeight} onChange={(e) => updateElement(selectedId, { fontWeight: e.target.value })}
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500"
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="600">Semi Bold</option>
-                          <option value="bold">Bold</option>
-                          <option value="900">Black</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Align</label>
-                        <div className="flex bg-slate-800 border border-slate-700 rounded-lg overflow-hidden p-0.5 h-9">
-                          {['left', 'center', 'right'].map(align => (
-                            <button key={align} onClick={() => updateElement(selectedId, { textAlign: align })} className={`flex-1 flex justify-center items-center rounded-md transition-colors ${selectedElement.textAlign === align ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-700'}`}>
-                              {align === 'left' && <AlignLeft className="w-3.5 h-3.5"/>}
-                              {align === 'center' && <AlignCenter className="w-3.5 h-3.5"/>}
-                              {align === 'right' && <AlignRight className="w-3.5 h-3.5"/>}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Text Background</label>
-                      <div className="flex items-center gap-2">
-                        <input type="color" value={selectedElement.bgColor === 'transparent' ? '#000000' : selectedElement.bgColor} onChange={(e) => updateElement(selectedId, { bgColor: e.target.value })} className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border border-slate-700 p-0.5 flex-shrink-0" />
-                        <button onClick={() => updateElement(selectedId, { bgColor: 'transparent' })} className="text-xs text-slate-400 hover:text-white bg-slate-800 border border-slate-700 px-3 py-2 rounded-lg transition-colors">Transparent</button>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {selectedElement.type === 'shape' && (
-                  <>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Fill Color</label>
-                      <input type="color" value={selectedElement.bgColor === 'transparent' ? '#000000' : selectedElement.bgColor} onChange={(e) => updateElement(selectedId, { bgColor: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-slate-700 p-0.5" />
-                    </div>
-                    {selectedElement.shape !== 'circle' && selectedElement.shape !== 'triangle' && selectedElement.shape !== 'diamond' && selectedElement.shape !== 'badge' && (
-                      <div>
-                        <label className="text-xs text-slate-400 mb-1 block">Border Radius</label>
-                        <input type="text" value={selectedElement.borderRadius} onChange={(e) => updateElement(selectedId, { borderRadius: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
-                      </div>
-                    )}
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Border</label>
-                      <input type="text" value={selectedElement.border || 'none'} onChange={(e) => updateElement(selectedId, { border: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="2px solid #fff" />
-                    </div>
-                  </>
-                )}
-
-                {selectedElement.type === 'image' && (
-                  <>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Image URL</label>
-                      <input type="url" value={selectedElement.url} onChange={(e) => updateElement(selectedId, { url: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Border Radius</label>
-                      <input type="text" value={selectedElement.borderRadius} onChange={(e) => updateElement(selectedId, { borderRadius: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" />
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">Fit</label>
-                      <select value={selectedElement.objectFit || 'cover'} onChange={(e) => updateElement(selectedId, { objectFit: e.target.value })} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500">
-                        <option value="cover">Cover</option>
-                        <option value="contain">Contain</option>
-                        <option value="fill">Fill</option>
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                {selectedElement.type === 'qrcode' && (
-                  <div>
-                    <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl mb-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Lock className="w-3.5 h-3.5 text-indigo-400" />
-                        <span className="text-xs font-bold text-indigo-300">Required Element</span>
-                      </div>
-                      <p className="text-[11px] text-indigo-400/80">A unique QR code will be generated for each attendee's ticket. You can reposition and resize it.</p>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400 mb-1 block">QR Background</label>
-                      <input type="color" value={selectedElement.bgColor} onChange={(e) => updateElement(selectedId, { bgColor: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-slate-700 p-0.5" />
-                    </div>
-                  </div>
-                )}
-
-                {selectedElement.type === 'icon' && (
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Icon Color</label>
-                    <input type="color" value={selectedElement.color} onChange={(e) => updateElement(selectedId, { color: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-slate-700 p-0.5" />
-                  </div>
-                )}
-
-                {/* Global element controls */}
-                <div className="pt-3 mt-3 border-t border-slate-800/60 space-y-3">
-                  <div>
-                    <label className="text-xs text-slate-400 mb-1 block">Opacity</label>
-                    <input type="range" min="0" max="1" step="0.05" value={selectedElement.opacity ?? 1} onChange={(e) => updateElement(selectedId, { opacity: parseFloat(e.target.value) })} className="w-full accent-indigo-500" />
-                  </div>
-                  <div className="flex space-x-2">
-                    <button onClick={() => sendBackward(selectedId)} className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-lg text-xs font-medium text-slate-300 transition-colors flex items-center justify-center gap-1"><ChevDown className="w-3 h-3" /> Back</button>
-                    <button onClick={() => bringForward(selectedId)} className="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700/50 rounded-lg text-xs font-medium text-slate-300 transition-colors flex items-center justify-center gap-1"><ChevronUp className="w-3 h-3" /> Front</button>
-                  </div>
-                </div>
-
-                {!selectedElement._locked && (
-                  <button onClick={() => deleteElement(selectedId)} className="w-full flex items-center justify-center space-x-2 py-2.5 mt-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors text-sm font-bold">
-                    <Trash2 className="w-4 h-4" /> <span>Delete Element</span>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
-        <div className="p-4 border-t border-slate-800/60 bg-slate-900/80">
+        <div className="p-4 border-t border-zinc-800/60 bg-zinc-900/80">
           <button 
             onClick={handleExport} disabled={isExporting}
-            className="w-full py-3.5 rounded-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/40 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full py-3.5 rounded-xl font-bold bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/20 hover:shadow-white/20 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
           >
             {isExporting ? <Loader className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
             <span>{isExporting ? 'Generating...' : 'Save & Apply'}</span>
@@ -716,12 +657,12 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
 
       {/* ─── Canvas Workspace ─── */}
       <div 
-        className="flex-1 bg-slate-950/50 flex items-center justify-center relative overflow-hidden"
+        className="flex-1 bg-zinc-950/50 flex items-center justify-center relative overflow-hidden"
         onClick={() => setSelectedId(null)}
         style={{ backgroundImage: 'radial-gradient(#1e293b 1px, transparent 1px)', backgroundSize: '24px 24px' }}
       >
         {/* Mode indicator */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-full text-xs font-bold text-slate-400 z-30">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-zinc-800/80 backdrop-blur border border-zinc-700/50 rounded-full text-xs font-bold text-zinc-400 z-30">
           {mode === 'ticket' ? '🎫 Ticket Designer' : '🖼️ Cover Designer'} — {canvasWidth}×{canvasHeight}
         </div>
 
@@ -739,6 +680,20 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
           {bgImage && (
             <div className="absolute inset-0 bg-black pointer-events-none" style={{ opacity: bgOverlayOpacity }} />
           )}
+          {guides.map((g, i) => (
+            <div 
+              key={i} 
+              className="absolute bg-rose-500 z-50 pointer-events-none" 
+              style={{
+                [g.type === 'v' ? 'left' : 'top']: g.pos,
+                [g.type === 'v' ? 'top' : 'left']: 0,
+                [g.type === 'v' ? 'bottom' : 'right']: 0,
+                [g.type === 'v' ? 'width' : 'height']: '1px',
+                boxShadow: '0 0 4px rgba(244, 63, 94, 0.5)'
+              }} 
+            />
+          ))}
+
           {elements.map((el, index) => {
             const isSelected = selectedId === el.id;
             return (
@@ -746,12 +701,52 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                 key={el.id}
                 position={{ x: el.x, y: el.y }}
                 size={{ width: el.width, height: el.height }}
-                onDrag={(e, d) => updateElement(el.id, { x: d.x, y: d.y })}
-                onResize={(e, direction, ref, delta, position) => {
-                  updateElement(el.id, { width: parseInt(ref.style.width), height: parseInt(ref.style.height), ...position });
+                onDrag={(e, d) => {
+                  let newX = d.x;
+                  let newY = d.y;
+                  let newGuides = [];
+                  const snap = 10;
+                  
+                  const cX = canvasWidth / 2;
+                  const cY = canvasHeight / 2;
+                  const elCX = newX + el.width / 2;
+                  const elCY = newY + el.height / 2;
+
+                  // Center snap
+                  if (Math.abs(elCX - cX) < snap) { newX = cX - el.width / 2; newGuides.push({ type: 'v', pos: cX }); }
+                  if (Math.abs(elCY - cY) < snap) { newY = cY - el.height / 2; newGuides.push({ type: 'h', pos: cY }); }
+                  
+                  // Edge snap
+                  if (Math.abs(newX) < snap) { newX = 0; newGuides.push({ type: 'v', pos: 0 }); }
+                  if (Math.abs(newX + el.width - canvasWidth) < snap) { newX = canvasWidth - el.width; newGuides.push({ type: 'v', pos: canvasWidth - 1 }); }
+                  if (Math.abs(newY) < snap) { newY = 0; newGuides.push({ type: 'h', pos: 0 }); }
+                  if (Math.abs(newY + el.height - canvasHeight) < snap) { newY = canvasHeight - el.height; newGuides.push({ type: 'h', pos: canvasHeight - 1 }); }
+
+                  setGuides(newGuides);
+                  updateElement(el.id, { x: newX, y: newY });
+                }}
+                onDragStop={(e, d) => {
+                  setGuides([]);
+                  // Apply final snap logic to ensure it stays snapped
+                  let newX = d.x;
+                  let newY = d.y;
+                  const snap = 10;
+                  const cX = canvasWidth / 2;
+                  const cY = canvasHeight / 2;
+                  const elCX = newX + el.width / 2;
+                  const elCY = newY + el.height / 2;
+
+                  if (Math.abs(elCX - cX) < snap) newX = cX - el.width / 2;
+                  if (Math.abs(elCY - cY) < snap) newY = cY - el.height / 2;
+                  if (Math.abs(newX) < snap) newX = 0;
+                  if (Math.abs(newX + el.width - canvasWidth) < snap) newX = canvasWidth - el.width;
+                  if (Math.abs(newY) < snap) newY = 0;
+                  if (Math.abs(newY + el.height - canvasHeight) < snap) newY = canvasHeight - el.height;
+
+                  updateElement(el.id, { x: newX, y: newY });
                 }}
                 onClick={(e) => { e.stopPropagation(); setSelectedId(el.id); }}
-                className={`group ${isSelected ? 'ring-2 ring-indigo-500 ring-offset-1 ring-offset-transparent' : ''}`}
+                className={`group ${isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-transparent' : ''}`}
                 style={{ zIndex: index + 1, opacity: el.opacity ?? 1, userSelect: 'none', cursor: 'move' }}
               >
                 {el.type === 'text' && (
@@ -777,7 +772,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
                 {el.type === 'shape' && el.shape === 'badge' && (
                   <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
                     <svg viewBox="0 0 100 100" width="100%" height="100%">
-                      <polygon points="50,3 61,38 98,38 68,60 79,95 50,73 21,95 32,60 2,38 39,38" fill={el.bgColor === 'transparent' ? '#4f46e5' : el.bgColor} />
+                      <polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill={el.bgColor === 'transparent' ? '#4f46e5' : el.bgColor} />
                     </svg>
                   </div>
                 )}
@@ -805,20 +800,20 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
 
                 {el.type === 'qrcode' && (
                   <div style={{ width: '100%', height: '100%', backgroundColor: el.bgColor, padding: '8px', borderRadius: '8px', pointerEvents: 'none', transform: `rotate(${el.rotation || 0}deg)` }}>
-                    <div className="w-full h-full border-2 border-dashed border-slate-400 rounded flex flex-col items-center justify-center">
-                      <QrCode className="w-8 h-8 text-slate-500 mb-1" />
-                      <span className="text-[9px] font-bold text-slate-500 uppercase">QR Code</span>
+                    <div className="w-full h-full border-2 border-dashed border-zinc-400 rounded flex flex-col items-center justify-center">
+                      <QrCode className="w-8 h-8 text-zinc-500 mb-1" />
+                      <span className="text-[9px] font-bold text-zinc-500 uppercase">QR Code</span>
                     </div>
                   </div>
                 )}
                 
                 {/* Hover outline */}
                 {!isSelected && !isExporting && (
-                  <div className="absolute inset-0 border border-slate-500/0 group-hover:border-indigo-400/40 transition-colors pointer-events-none rounded" />
+                  <div className="absolute inset-0 border border-zinc-500/0 group-hover:border-indigo-400/40 transition-colors pointer-events-none rounded" />
                 )}
                 {/* Lock badge for QR */}
                 {el._locked && !isExporting && (
-                  <div className="absolute -top-2 -right-2 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center shadow-lg pointer-events-none z-10">
+                  <div className="absolute -top-2 -right-2 w-5 h-5 bg-white text-black font-bold rounded-full flex items-center justify-center shadow-lg pointer-events-none z-10">
                     <Lock className="w-3 h-3 text-white" />
                   </div>
                 )}
@@ -827,6 +822,209 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
           })}
         </div>
       </div>
+
+      {/* ─── Right Panel (Properties) ─── */}
+      <div className="w-[280px] bg-zinc-900/95 border-l border-zinc-800/60 flex flex-col h-full shadow-2xl z-20">
+          <div className="px-5 py-4 border-b border-zinc-800/60 flex justify-between items-center">
+            <h3 className="text-base font-bold text-white">
+              {selectedElement ? (selectedElement._locked ? '🔒 QR Code' : 'Properties') : 'Canvas Settings'}
+            </h3>
+            {selectedElement && (
+              <button onClick={() => setSelectedId(null)} className="text-zinc-400 hover:text-white bg-zinc-800/80 hover:bg-zinc-700 p-1.5 rounded-lg transition-colors">
+                <X className="w-4 h-4"/>
+              </button>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto p-5 animate-in fade-in slide-in-from-right-4 duration-200">
+            {!selectedElement ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1 block">Canvas Size</label>
+                  <div className="px-3 py-2 bg-zinc-800/50 border border-zinc-700/50 rounded-lg text-sm text-zinc-300">
+                    {canvasWidth} × {canvasHeight} px
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-zinc-400 mb-1 block">Canvas Background</label>
+                  <div className="flex items-center gap-2">
+                    <input type="color" value={canvasBg} onChange={(e) => setCanvasBg(e.target.value)} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5" />
+                  </div>
+                </div>
+                {bgImage && (
+                  <div>
+                    <label className="text-xs text-zinc-400 mb-1 block">Background Image</label>
+                    <div className="relative w-full h-24 rounded-lg overflow-hidden border border-zinc-700 mb-2">
+                      <img src={bgImage} alt="Canvas BG" className="w-full h-full object-cover" />
+                    </div>
+                    <button onClick={() => setBgImage('')} className="w-full py-2 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 text-xs font-bold rounded-lg border border-rose-500/20 transition-colors">
+                      Remove Background
+                    </button>
+                    <div className="mt-3">
+                      <label className="text-xs text-zinc-400 mb-1 block">Image Overlay Opacity</label>
+                      <input type="range" min="0" max="1" step="0.05" value={bgOverlayOpacity} onChange={(e) => setBgOverlayOpacity(parseFloat(e.target.value))} className="w-full accent-white" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {selectedElement.type === 'text' && (
+                  <>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Content</label>
+                      <textarea 
+                        value={selectedElement.content} onChange={(e) => updateElement(selectedId, { content: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-white focus:ring-1 focus:ring-white/50 min-h-[60px] transition-all"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Font Size</label>
+                        <input type="number" value={selectedElement.fontSize} onChange={(e) => updateElement(selectedId, { fontSize: Number(e.target.value) })} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Color</label>
+                        <input type="color" value={selectedElement.color} onChange={(e) => updateElement(selectedId, { color: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Font Family</label>
+                      <select 
+                        value={selectedElement.fontFamily} onChange={(e) => updateElement(selectedId, { fontFamily: e.target.value })}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-white"
+                      >
+                        <option value="Inter">Inter</option>
+                        <option value="Outfit">Outfit</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Impact">Impact</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Weight</label>
+                        <select 
+                          value={selectedElement.fontWeight} onChange={(e) => updateElement(selectedId, { fontWeight: e.target.value })}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-white"
+                        >
+                          <option value="normal">Normal</option>
+                          <option value="600">Semi Bold</option>
+                          <option value="bold">Bold</option>
+                          <option value="900">Black</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Align</label>
+                        <div className="flex bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden p-0.5 h-9">
+                          {['left', 'center', 'right'].map(align => (
+                            <button key={align} onClick={() => updateElement(selectedId, { textAlign: align })} className={`flex-1 flex justify-center items-center rounded-md transition-colors ${selectedElement.textAlign === align ? 'bg-white text-black font-bold text-white' : 'text-zinc-400 hover:bg-zinc-700'}`}>
+                              {align === 'left' && <AlignLeft className="w-3.5 h-3.5"/>}
+                              {align === 'center' && <AlignCenter className="w-3.5 h-3.5"/>}
+                              {align === 'right' && <AlignRight className="w-3.5 h-3.5"/>}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Text Background</label>
+                      <div className="flex items-center gap-2">
+                        <input type="color" value={selectedElement.bgColor === 'transparent' ? '#000000' : selectedElement.bgColor} onChange={(e) => updateElement(selectedId, { bgColor: e.target.value })} className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5 flex-shrink-0" />
+                        <button onClick={() => updateElement(selectedId, { bgColor: 'transparent' })} className="text-xs text-zinc-400 hover:text-white bg-zinc-800 border border-zinc-700 px-3 py-2 rounded-lg transition-colors">Transparent</button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {selectedElement.type === 'shape' && (
+                  <>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Fill Color</label>
+                      <input type="color" value={selectedElement.bgColor === 'transparent' ? '#000000' : selectedElement.bgColor} onChange={(e) => updateElement(selectedId, { bgColor: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5" />
+                    </div>
+                    {selectedElement.shape !== 'circle' && selectedElement.shape !== 'triangle' && selectedElement.shape !== 'diamond' && selectedElement.shape !== 'badge' && (
+                      <div>
+                        <label className="text-xs text-zinc-400 mb-1 block">Border Radius</label>
+                        <input type="text" value={selectedElement.borderRadius} onChange={(e) => updateElement(selectedId, { borderRadius: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" />
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Border</label>
+                      <input type="text" value={selectedElement.border || 'none'} onChange={(e) => updateElement(selectedId, { border: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" placeholder="2px solid #fff" />
+                    </div>
+                  </>
+                )}
+
+                {selectedElement.type === 'image' && (
+                  <>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Image URL</label>
+                      <input type="url" value={selectedElement.url} onChange={(e) => updateElement(selectedId, { url: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Border Radius</label>
+                      <input type="text" value={selectedElement.borderRadius} onChange={(e) => updateElement(selectedId, { borderRadius: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">Fit</label>
+                      <select value={selectedElement.objectFit || 'cover'} onChange={(e) => updateElement(selectedId, { objectFit: e.target.value })} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white focus:border-white">
+                        <option value="cover">Cover</option>
+                        <option value="contain">Contain</option>
+                        <option value="fill">Fill</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {selectedElement.type === 'qrcode' && (
+                  <div>
+                    <div className="p-3 bg-white/10 border border-white/20 rounded-xl mb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Lock className="w-3.5 h-3.5 text-white" />
+                        <span className="text-xs font-bold text-white">Required Element</span>
+                      </div>
+                      <p className="text-[11px] text-white/80">A unique QR code will be generated for each attendee's ticket. You can reposition and resize it.</p>
+                    </div>
+                    <div>
+                      <label className="text-xs text-zinc-400 mb-1 block">QR Background</label>
+                      <input type="color" value={selectedElement.bgColor} onChange={(e) => updateElement(selectedId, { bgColor: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5" />
+                    </div>
+                  </div>
+                )}
+
+                {selectedElement.type === 'icon' && (
+                  <div>
+                    <label className="text-xs text-zinc-400 mb-1 block">Icon Color</label>
+                    <input type="color" value={selectedElement.color} onChange={(e) => updateElement(selectedId, { color: e.target.value })} className="w-full h-9 rounded-lg cursor-pointer bg-transparent border border-zinc-700 p-0.5" />
+                  </div>
+                )}
+
+                {/* Global element controls */}
+                <div className="pt-3 mt-3 border-t border-zinc-800/60 space-y-3">
+                  <div>
+                    <label className="text-xs text-zinc-400 mb-1 block">Opacity</label>
+                    <input type="range" min="0" max="1" step="0.05" value={selectedElement.opacity ?? 1} onChange={(e) => updateElement(selectedId, { opacity: parseFloat(e.target.value) })} className="w-full accent-white" />
+                  </div>
+                  <div className="flex space-x-2">
+                    <button onClick={() => sendBackward(selectedId)} className="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50 rounded-lg text-xs font-medium text-zinc-300 transition-colors flex items-center justify-center gap-1"><ChevDown className="w-3 h-3" /> Back</button>
+                    <button onClick={() => bringForward(selectedId)} className="flex-1 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700/50 rounded-lg text-xs font-medium text-zinc-300 transition-colors flex items-center justify-center gap-1"><ChevronUp className="w-3 h-3" /> Front</button>
+                  </div>
+                </div>
+
+                {!selectedElement._locked && (
+                  <button onClick={() => deleteElement(selectedId)} className="w-full flex items-center justify-center space-x-2 py-2.5 mt-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors text-sm font-bold">
+                    <Trash2 className="w-4 h-4" /> <span>Delete Element</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
     </div>
   );
 }
@@ -846,7 +1044,7 @@ function SidebarTab({ icon, label, active, onClick }) {
     <button 
       onClick={onClick}
       className={`flex flex-col items-center justify-center py-3 px-1 w-full border-l-2 transition-all ${
-        active ? 'border-indigo-500 bg-indigo-500/10 text-indigo-400' : 'border-transparent text-slate-500 hover:text-slate-300 hover:bg-slate-800/50'
+        active ? 'border-white bg-white/10 text-white' : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
       }`}
     >
       <div className="w-5 h-5 mb-1">{icon}</div>
@@ -857,7 +1055,7 @@ function SidebarTab({ icon, label, active, onClick }) {
 
 function ShapeButton({ icon, label, onClick }) {
   return (
-    <button onClick={onClick} className="flex flex-col items-center justify-center p-3.5 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/50 rounded-xl transition-all text-slate-300 hover:text-indigo-400 hover:border-indigo-500/50">
+    <button onClick={onClick} className="flex flex-col items-center justify-center p-3.5 bg-zinc-800/80 hover:bg-zinc-700 border border-zinc-700/50 rounded-xl transition-all text-zinc-300 hover:text-white hover:border-white/50">
       <div className="w-6 h-6 mb-1.5 flex items-center justify-center">{icon}</div>
       <span className="text-[10px] font-semibold">{label}</span>
     </button>

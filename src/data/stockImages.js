@@ -3,7 +3,7 @@ export const STOCK_IMAGES = [
   { id: 'p1', category: 'Party', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=800&q=80' },
   { id: 'p2', category: 'Party', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=800&q=80' },
   { id: 'p3', category: 'Party', url: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=800&q=80' },
-  { id: 'p4', category: 'Party', url: 'https://images.unsplash.com/photo-1533174000255-167825d19488?auto=format&fit=crop&w=800&q=80' },
+  { id: 'p4', category: 'Party', url: 'https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=800&q=80' },
   { id: 'p5', category: 'Party', url: 'https://images.unsplash.com/photo-1544928147-79a2dbc1f389?auto=format&fit=crop&w=800&q=80' },
   
   // Tech & Business (Circuits, nodes, futuristic)
@@ -15,7 +15,7 @@ export const STOCK_IMAGES = [
   
   // Music & Concerts (Stage ambiance, no focused faces)
   { id: 'm1', category: 'Music', url: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?auto=format&fit=crop&w=800&q=80' },
-  { id: 'm2', category: 'Music', url: 'https://images.unsplash.com/photo-1470229722913-7c092dbb1580?auto=format&fit=crop&w=800&q=80' },
+  { id: 'm2', category: 'Music', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80' },
   { id: 'm3', category: 'Music', url: 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80' },
   { id: 'm4', category: 'Music', url: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&w=800&q=80' },
   { id: 'm5', category: 'Music', url: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?auto=format&fit=crop&w=800&q=80' },
@@ -24,7 +24,7 @@ export const STOCK_IMAGES = [
   { id: 'a1', category: 'Arts', url: 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=800&q=80' },
   { id: 'a2', category: 'Arts', url: 'https://images.unsplash.com/photo-1543857778-c4a1a3e0b2eb?auto=format&fit=crop&w=800&q=80' },
   { id: 'a3', category: 'Arts', url: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?auto=format&fit=crop&w=800&q=80' },
-  { id: 'a4', category: 'Arts', url: 'https://images.unsplash.com/photo-1518998053401-878f0b784a9a?auto=format&fit=crop&w=800&q=80' },
+  { id: 'a4', category: 'Arts', url: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?auto=format&fit=crop&w=800&q=80' },
   { id: 'a5', category: 'Arts', url: 'https://images.unsplash.com/photo-1557682257-2f9c37a3a5f3?auto=format&fit=crop&w=800&q=80' },
   
   // Wellness (Calm gradients, nature abstracts)
@@ -38,7 +38,7 @@ export const STOCK_IMAGES = [
   { id: 'ab1', category: 'Abstract', url: 'https://images.unsplash.com/photo-1557672172-298e090bd0f1?auto=format&fit=crop&w=800&q=80' },
   { id: 'ab2', category: 'Abstract', url: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80' },
   { id: 'ab3', category: 'Abstract', url: 'https://images.unsplash.com/photo-1500462918059-b1a0cb512f1d?auto=format&fit=crop&w=800&q=80' },
-  { id: 'ab4', category: 'Abstract', url: 'https://images.unsplash.com/photo-1507608616769-80028639e14f?auto=format&fit=crop&w=800&q=80' },
+  { id: 'ab4', category: 'Abstract', url: 'https://images.unsplash.com/photo-1604871000636-074fa5117945?auto=format&fit=crop&w=800&q=80' },
   { id: 'ab5', category: 'Abstract', url: 'https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?auto=format&fit=crop&w=800&q=80' }
 ];
 

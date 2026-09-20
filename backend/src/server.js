@@ -1,6 +1,7 @@
 // ===== LOAD ENV FIRST =====
 require('dotenv').config();
 
+const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -17,14 +18,20 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Routes
 const authRoutes = require('./routes/auth');
 const eventRoutes = require('./routes/events');
+const aiRoutes = require('./routes/ai');
 const adminRoutes = require('./routes/admin');
 const notificationsRoutes = require('./routes/notifications');
+
+// Socket setup
+const { initSocket } = require('./socket');
 
 // Middleware
 const { apiLimiter } = require('./middleware/rateLimit');
 const { verifyToken, requireEventAccess } = require('./middleware/auth');
 
 const app = express();
+const httpServer = http.createServer(app);
+const io = initSocket(httpServer);
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
@@ -46,6 +53,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/notifications', notificationsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // ===== SMTP HELPER FUNCTIONS (shared) =====
 
@@ -275,6 +283,9 @@ app.post('/api/v1/tickets/book', async (req, res) => {
         }));
         if (notifications.length > 0) {
           await prisma.notification.createMany({ data: notifications });
+          notifications.forEach(n => {
+            io.to(n.user_id).emit('new_notification', { ...n, created_at: new Date() });
+          });
         }
       }
     } catch (e) {
@@ -633,15 +644,17 @@ app.get('/api/tickets/:id', async (req, res) => {
   }
 });
 
-app.post('/api/tickets/:id/scan', async (req, res) => {
+app.post('/api/v1/tickets/:id/admit', async (req, res) => {
   try {
     const ticket = await prisma.ticket.findUnique({ where: { id: req.params.id } });
-    if (!ticket) return res.status(404).json({ success: false, message: 'Invalid Ticket' });
-    if (ticket.status === 'INSIDE') return res.status(200).json({ success: false, message: 'Already Admitted' });
+    if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
+    if (ticket.status !== 'OUTSIDE') return res.status(400).json({ success: false, message: 'User is not outside' });
+    
     await prisma.$transaction([
       prisma.ticket.update({ where: { id: req.params.id }, data: { status: 'INSIDE', in_time: new Date() } }),
       prisma.attendanceLog.create({ data: { ticket_id: req.params.id, action_type: 'ENTRY', roll_number: ticket.student_roll_no } })
     ]);
+    io.to(`event_${ticket.event_id}`).emit('ticket_scanned', { ticketId: ticket.id, status: 'INSIDE' });
     res.status(200).json({ success: true, message: 'Admitted Successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -690,6 +703,11 @@ app.post('/api/v1/tickets/scan', async (req, res) => {
       }
     });
     res.status(200).json(result);
+    if (result.success && result.attendee) {
+      const ticketId = result.attendee.id;
+      const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
+      if (ticket) io.to(`event_${ticket.event_id}`).emit('ticket_scanned', { ticketId: ticket.id, status: result.status });
+    }
   } catch (err) {
     if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
     res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -708,9 +726,13 @@ app.post('/api/v1/tickets/:id/temp-exit', async (req, res) => {
       
       await tx.ticket.update({ where: { id }, data: { status: 'TEMPORARY_OUT', exit_image, temp_out_time: new Date() } });
       await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'TEMPORARY_EXIT', roll_number: ticket.student_roll_no, captured_photo_url: exit_image } });
-      return { success: true, message: 'User marked as temporarily out.' };
+      return { success: true, message: 'User marked as temporarily out.', ticket_id: id };
     });
     res.status(200).json(result);
+    if (result.success) {
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (ticket) io.to(`event_${ticket.event_id}`).emit('ticket_scanned', { ticketId: id, status: 'TEMPORARY_OUT' });
+    }
   } catch (err) {
     if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
     if (err.message === 'User is not inside.') return res.status(400).json({ success: false, message: err.message });
@@ -728,9 +750,13 @@ app.post('/api/v1/tickets/:id/re-enter', async (req, res) => {
       
       await tx.ticket.update({ where: { id }, data: { status: 'INSIDE', exit_image: null, temp_in_time: new Date() } });
       await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'RE_ENTRY', roll_number: ticket.student_roll_no } });
-      return { success: true, message: 'Access Granted. Welcome back!' };
+      return { success: true, message: 'Access Granted. Welcome back!', ticket_id: id };
     });
     res.status(200).json(result);
+    if (result.success) {
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (ticket) io.to(`event_${ticket.event_id}`).emit('ticket_scanned', { ticketId: id, status: 'INSIDE' });
+    }
   } catch (err) {
     if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
     if (err.message === 'User is not temporarily out.') return res.status(400).json({ success: false, message: err.message });
@@ -748,9 +774,13 @@ app.post('/api/v1/tickets/:id/checkout', async (req, res) => {
       
       await tx.ticket.update({ where: { id }, data: { status: 'CHECKED_OUT', out_time: new Date() } });
       await tx.attendanceLog.create({ data: { ticket_id: id, action_type: 'CHECKOUT', roll_number: ticket.student_roll_no } });
-      return { success: true, message: 'User checked out permanently.' };
+      return { success: true, message: 'User checked out permanently.', ticket_id: id };
     });
     res.status(200).json(result);
+    if (result.success) {
+      const ticket = await prisma.ticket.findUnique({ where: { id } });
+      if (ticket) io.to(`event_${ticket.event_id}`).emit('ticket_scanned', { ticketId: id, status: 'CHECKED_OUT' });
+    }
   } catch (err) {
     if (err.message === 'Ticket not found') return res.status(404).json({ success: false, message: 'Invalid Ticket' });
     if (err.message === 'User is not inside.') return res.status(400).json({ success: false, message: err.message });
@@ -761,7 +791,7 @@ app.post('/api/v1/tickets/:id/checkout', async (req, res) => {
 // ===== START SERVER =====
 async function startServer() {
 
-  app.listen(PORT, async () => {
+  httpServer.listen(PORT, async () => {
     const os = require('os');
     const interfaces = os.networkInterfaces();
     const ips = [];

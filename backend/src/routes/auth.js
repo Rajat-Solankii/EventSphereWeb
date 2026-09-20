@@ -6,6 +6,7 @@ const { PrismaClient } = require('@prisma/client');
 const nodemailer = require('nodemailer');
 const { authLimiter, emailLimiter } = require('../middleware/rateLimit');
 const { verifyToken } = require('../middleware/auth');
+const { getIO } = require('../socket');
 
 const prisma = new PrismaClient();
 
@@ -850,7 +851,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
     });
 
     try {
-      await prisma.notification.create({
+      const newNotification = await prisma.notification.create({
         data: {
           user_id: user.id,
           title: 'Password Changed',
@@ -858,6 +859,7 @@ router.post('/reset-password', authLimiter, async (req, res) => {
           type: 'INFO'
         }
       });
+      getIO().to(user.id).emit('new_notification', newNotification);
     } catch (err) {
       console.error('Failed to create notification', err);
     }
