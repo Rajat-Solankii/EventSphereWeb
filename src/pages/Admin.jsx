@@ -1322,8 +1322,9 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     
     if (event?.image) {
       // Append a cache-buster so the browser fetches fresh with CORS headers instead of using the tainted cache
+      // Use 'cb' instead of 'cors' to avoid triggering S3's restricted REST API subresources
       const sep = event.image.includes('?') ? '&' : '?';
-      img.src = event.image + sep + 'cors=' + Date.now();
+      img.src = event.image + sep + 'cb=' + Date.now();
     }
   };
 
