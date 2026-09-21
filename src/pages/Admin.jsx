@@ -3086,6 +3086,9 @@ function AdminDashboardInner() {
       const handleNewNotification = (notification) => {
         setNotifications((prev) => [notification, ...prev]);
         toast.show(`New notification: ${notification.title}`, 'info');
+        // Instantly fetch the updated participant list and event counts when a new registration/notification occurs
+        fetchEvents();
+        fetchAttendees();
       };
       socket.on('new_notification', handleNewNotification);
       return () => {
