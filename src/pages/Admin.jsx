@@ -869,7 +869,6 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
         if (sessionId) setCurrentSessionId(sessionId);
         toast('AI has finished preparing your event details!', 'success');
         onEventReady({ ...finalJson.event_data, ai_session_id: sessionId });
-        onClose();
         setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
       } else {
         if (sessionId && sessionId !== currentSessionId) {
