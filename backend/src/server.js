@@ -14,6 +14,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const upload = multer({ storage: multer.memoryStorage() });
+const { uploadBase64ToS3 } = require('./utils/s3');
 
 // Routes
 const authRoutes = require('./routes/auth');
@@ -222,6 +223,11 @@ app.post('/api/v1/tickets/book', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Registrations are closed for this past event.' });
     }
 
+    let finalScreenshot = attendee.paymentScreenshot || null;
+    if (finalScreenshot && finalScreenshot.startsWith('data:image/')) {
+      finalScreenshot = await uploadBase64ToS3(finalScreenshot, 'tickets');
+    }
+
     const dbTicket = await prisma.ticket.create({
       data: {
         event_id: attendee.eventId,
@@ -232,8 +238,8 @@ app.post('/api/v1/tickets/book', async (req, res) => {
         tier_id: attendee.tierId ? String(attendee.tierId) : null,
         tier_name: attendee.tierName || null,
         custom_data: attendee.customData ? JSON.stringify(attendee.customData) : null,
-        payment_screenshot: attendee.paymentScreenshot || null,
-        status: attendee.paymentScreenshot ? 'PENDING' : 'OUTSIDE'
+        payment_screenshot: finalScreenshot,
+        status: finalScreenshot ? 'PENDING' : 'OUTSIDE'
       }
     });
 
@@ -716,9 +722,12 @@ app.post('/api/v1/tickets/scan', async (req, res) => {
 
 app.post('/api/v1/tickets/:id/temp-exit', async (req, res) => {
   const { id } = req.params;
-  const { exit_image } = req.body;
+  let { exit_image } = req.body;
   if (!exit_image) return res.status(400).json({ success: false, message: 'Exit image is required.' });
   try {
+    if (exit_image.startsWith('data:image/')) {
+      exit_image = await uploadBase64ToS3(exit_image, 'exit_images');
+    }
     const result = await prisma.$transaction(async (tx) => {
       const ticket = await tx.ticket.findUnique({ where: { id } });
       if (!ticket) throw new Error('Ticket not found');

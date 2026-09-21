@@ -7,6 +7,7 @@ const nodemailer = require('nodemailer');
 const { authLimiter, emailLimiter } = require('../middleware/rateLimit');
 const { verifyToken } = require('../middleware/auth');
 const { getIO } = require('../socket');
+const { uploadBase64ToS3 } = require('../utils/s3');
 
 const prisma = new PrismaClient();
 
@@ -482,7 +483,13 @@ router.put('/profile', verifyToken, authLimiter, async (req, res) => {
     if (action === 'update_basic') {
       const updateData = {};
       if (name) updateData.name = name.trim();
-      if (profile_image !== undefined) updateData.profile_image = profile_image;
+      if (profile_image !== undefined) {
+        if (profile_image && profile_image.startsWith('data:image/')) {
+          updateData.profile_image = await uploadBase64ToS3(profile_image, 'profiles');
+        } else {
+          updateData.profile_image = profile_image;
+        }
+      }
 
       const updatedUser = await prisma.user.update({
         where: { id: userId },

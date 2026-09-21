@@ -5,6 +5,7 @@ const { verifyToken, requireRole, requireEventAccess } = require('../middleware/
 const nodemailer = require('nodemailer');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { getIO } = require('../socket');
+const { uploadBase64ToS3 } = require('../utils/s3');
 
 function getSmtpTransporter() {
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -142,6 +143,11 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
       return res.status(400).json({ error: 'An event with this name already exists.' });
     }
 
+    let finalImage = image || null;
+    if (finalImage && finalImage.startsWith('data:image/')) {
+      finalImage = await uploadBase64ToS3(finalImage, 'events');
+    }
+
     const event = await prisma.event.create({
       data: {
         organization_id: req.user.organization_id,
@@ -152,7 +158,7 @@ router.post('/', verifyToken, requireRole('SYSTEM_ADMIN', 'ORG_ADMIN'), async (r
         ticket_price: parseFloat(ticket_price) || 0,
         total_capacity: parseInt(total_capacity) || 100,
         available_slots: parseInt(available_slots) || 100,
-        image: image || null,
+        image: finalImage,
         tiers: tiers ? JSON.stringify(tiers) : null,
         customFormFields: customFormFields ? JSON.stringify(customFormFields) : null,
         smtp_config: smtp_config ? JSON.stringify(smtp_config) : null,
@@ -213,13 +219,18 @@ router.put('/:id', verifyToken, requireEventAccess, async (req, res) => {
       }
     }
 
+    let finalImage = image;
+    if (finalImage && finalImage.startsWith('data:image/')) {
+      finalImage = await uploadBase64ToS3(finalImage, 'events');
+    }
+
     const event = await prisma.event.update({
       where: { id: req.params.id },
       data: {
         title, date_time: date_time ? new Date(date_time) : undefined, end_time: end_time !== undefined ? (end_time ? new Date(end_time) : null) : undefined, venue,
         ticket_price: parseFloat(ticket_price), total_capacity: parseInt(total_capacity),
         available_slots: parseInt(available_slots),
-        image: image !== undefined ? image : undefined,
+        image: finalImage !== undefined ? finalImage : undefined,
         tiers: tiers ? JSON.stringify(tiers) : undefined,
         customFormFields: customFormFields ? JSON.stringify(customFormFields) : undefined,
         smtp_config: smtp_config !== undefined ? (smtp_config ? JSON.stringify(smtp_config) : null) : undefined,
