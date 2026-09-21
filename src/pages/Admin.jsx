@@ -1379,6 +1379,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const [upiConfig, setUpiConfig] = useState({ upiId: '', upiName: '' });
   const [verifyState, setVerifyState] = useState({});
   const [declineState, setDeclineState] = useState({});
+  const [deleteActionState, setDeleteActionState] = useState({});
   const [showBroadcastPreview, setShowBroadcastPreview] = useState(false);
   
   // Private custom email state
@@ -1750,6 +1751,8 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     const handleDeleteTicket = async (ticketId) => {
       const yes = await confirm('Delete Registration', 'Are you sure you want to delete this registration? This action cannot be undone.');
       if (!yes) return;
+      
+      setDeleteActionState(prev => ({ ...prev, [ticketId]: true }));
       try {
         const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${ticketId}`, {
           method: 'DELETE',
@@ -1758,9 +1761,14 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         if (res.ok) {
           if (setAllAttendees) setAllAttendees(prev => prev.filter(t => t.passId !== ticketId));
           window.dispatchEvent(new StorageEvent('storage', { key: 'eventos_attendees' }));
+        } else {
+          toast('Failed to delete ticket', 'error');
         }
       } catch (e) {
         console.error('Failed to delete ticket', e);
+        toast('Error deleting ticket', 'error');
+      } finally {
+        setDeleteActionState(prev => ({ ...prev, [ticketId]: false }));
       }
     };
 
@@ -2434,10 +2442,15 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                                 {/* Delete */}
                                 <button
                                   onClick={() => handleDeleteTicket(a.passId)}
-                                  className="p-2 text-theme-text/50 hover:text-red-400 hover:bg-red-400/10 rounded-sm transition-colors"
+                                  disabled={deleteActionState[a.passId]}
+                                  className="p-2 text-theme-text/50 hover:text-red-400 hover:bg-red-400/10 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   title="Delete Ticket"
                                 >
-                                  <Trash2 size={16} />
+                                  {deleteActionState[a.passId] ? (
+                                    <div className="w-4 h-4 rounded-full border-2 border-red-400 border-t-transparent animate-spin" />
+                                  ) : (
+                                    <Trash2 size={16} />
+                                  )}
                                 </button>
                               </div>
                             </td>
