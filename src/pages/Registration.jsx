@@ -319,6 +319,18 @@ export default function Registration() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(finalEmail)) {
+      setRegistrationError("Please enter a valid email address.");
+      return;
+    }
+
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(finalPhone)) {
+      setRegistrationError("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
     setIsOtpSending(true);
     setOtpError('');
     setRegistrationError('');
