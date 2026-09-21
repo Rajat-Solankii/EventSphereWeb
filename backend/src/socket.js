@@ -143,13 +143,15 @@ The JSON MUST match this structure exactly:
 
         let parsedJson = null;
         try {
-          if (fullReply.includes('"event_ready":')) {
-            const jsonMatch = fullReply.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              parsedJson = JSON.parse(jsonMatch[0]);
-            }
+          const firstIdx = fullReply.indexOf('{');
+          const lastIdx = fullReply.lastIndexOf('}');
+          if (firstIdx !== -1 && lastIdx !== -1 && lastIdx > firstIdx) {
+            const jsonStr = fullReply.substring(firstIdx, lastIdx + 1);
+            parsedJson = JSON.parse(jsonStr);
           }
-        } catch (e) {}
+        } catch (e) {
+          console.error('[Socket] AI JSON Parse Error:', e.message);
+        }
 
         const newHistory = [...messages, { role: 'assistant', content: fullReply }];
         let currentSessionId = sessionId;
