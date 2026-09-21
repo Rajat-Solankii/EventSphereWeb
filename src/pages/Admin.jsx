@@ -1320,7 +1320,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       toast('Failed to load image for color extraction.', 'error');
     };
     
-    img.src = event?.image;
+    if (event?.image) {
+      // Append a cache-buster so the browser fetches fresh with CORS headers instead of using the tainted cache
+      const sep = event.image.includes('?') ? '&' : '?';
+      img.src = event.image + sep + 'cors=' + Date.now();
+    }
   };
 
 
