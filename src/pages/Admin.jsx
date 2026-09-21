@@ -3191,14 +3191,6 @@ function AdminDashboardInner() {
 
   useEffect(() => {
     Promise.all([fetchEvents(), fetchAttendees(), fetchNotifications()]).finally(() => setIsLoading(false));
-
-    // Auto-refresh periodically for live dashboard updates
-    const interval = setInterval(() => {
-      fetchEvents();
-      fetchAttendees();
-      fetchNotifications();
-    }, 5000);
-    return () => clearInterval(interval);
   }, []);
 
 
