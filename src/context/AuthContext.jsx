@@ -40,9 +40,32 @@ export function AuthProvider({ children }) {
 
   // ===== Init: try to restore session on page load =====
   useEffect(() => {
-    silentRefresh().finally(() => setLoading(false));
+    const initAuth = async () => {
+      const token = localStorage.getItem('es_token');
+      if (token) {
+        try {
+          const res = await fetch(`${API}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setUser(data.user);
+            setAccessToken(token);
+            scheduleRefresh();
+            setLoading(false);
+            return;
+          }
+        } catch (err) {}
+      }
+      
+      // If no token or /me failed (e.g. expired token), fallback to silent refresh
+      await silentRefresh();
+      setLoading(false);
+    };
+    
+    initAuth();
     return () => { if (refreshTimer.current) clearTimeout(refreshTimer.current); };
-  }, []);
+  }, [silentRefresh, scheduleRefresh]);
 
   const clearAuth = () => {
     setAccessToken(null);

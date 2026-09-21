@@ -1525,7 +1525,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         if (res.ok) {
           toast('Payment verified and ticket confirmed!', 'success');
           setVerifyState(prev => ({ ...prev, [ticketId]: 'done' }));
-          fetchTickets(); // Refresh tickets to update status
+          setAllAttendees(prev => prev.map(a => a.passId === ticketId ? { ...a, status: 'OUTSIDE' } : a));
         } else {
           toast('Failed to verify payment', 'error');
           setVerifyState(prev => ({ ...prev, [ticketId]: 'idle' }));
@@ -1548,7 +1548,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         if (res.ok) {
           toast('Payment declined and ticket put on hold.', 'success');
           setDeclineState(prev => ({ ...prev, [ticketId]: 'done' }));
-          fetchTickets(); // Refresh tickets to update status
+          setAllAttendees(prev => prev.map(a => a.passId === ticketId ? { ...a, status: 'DECLINED' } : a));
         } else {
           toast('Failed to decline payment', 'error');
           setDeclineState(prev => ({ ...prev, [ticketId]: 'idle' }));
