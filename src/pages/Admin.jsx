@@ -3124,7 +3124,7 @@ function AdminDashboardInner() {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
-      if (res.ok) setNotifications(notifications.map(n => ({ ...n, is_read: true })));
+      if (res.ok) setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     } catch (e) {}
   };
   
@@ -3134,7 +3134,7 @@ function AdminDashboardInner() {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
-      if (res.ok) setNotifications(notifications.map(n => n.id === id ? { ...n, is_read: true } : n));
+      if (res.ok) setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     } catch (e) {}
   };
 
