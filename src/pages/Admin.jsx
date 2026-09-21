@@ -1189,11 +1189,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
   const isDeleteModalOpen = currentView === 'delete';
 
   const handleCloseView = () => {
-    if (window.history.state && window.history.state.idx > 0) {
-      navigate(-1);
-    } else {
-      setSearchParams({});
-    }
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('view');
+    setSearchParams(newParams);
+    // Do NOT set viewingEventId to null here unless intended.
+    // If they are just closing a modal, we shouldn't lose the event they are viewing!
   };
 
   const [editingEventId, setEditingEventId] = useState(null);
@@ -1355,7 +1355,9 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       ai_session_id: eventData.ai_session_id
     });
     setEditingEventId(null);
-    setSearchParams({ view: 'create' });
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('view', 'create');
+    setSearchParams(newParams);
   };
 
   const [smtpForm, setSmtpForm] = useState({ host: 'smtp.gmail.com', port: '587', user: '', pass: '', fromEmail: '' });
@@ -2414,7 +2416,9 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                                 {/* Message */}
                                 <button
                                   onClick={() => {
-                                    setSearchParams({ view: 'mail' });
+                                    const newParams = new URLSearchParams(searchParams);
+                                    newParams.set('view', 'mail');
+                                    setSearchParams(newParams);
                                     setCustomMailModal({ attendee: a, subject: '', message: '', attachments: [], status: 'idle' });
                                   }}
                                   className="p-2 text-theme-text/50 hover:text-black hover:bg-gray-100 rounded-sm transition-colors"
@@ -2846,14 +2850,22 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         {['ORG_ADMIN', 'SYSTEM_ADMIN'].includes(user?.role) && (
           <div className="flex flex-row w-full md:w-auto gap-3">
             <button
-              onClick={() => setSearchParams({ view: 'ai-chat' })}
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.set('view', 'ai-chat');
+                setSearchParams(newParams);
+              }}
               className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-3 sm:px-5 py-2.5 bg-black hover:bg-gray-500 text-white rounded-none text-xs sm:text-sm font-sans font-medium transition-all shadow-lg shadow-gray-500/20 border border-gray-500"
             >
               <MessageSquare className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />
               <span className="whitespace-nowrap">Ask AI</span>
             </button>
             <button
-              onClick={() => setSearchParams({ view: 'create' })}
+              onClick={() => {
+                const newParams = new URLSearchParams(searchParams);
+                newParams.set('view', 'create');
+                setSearchParams(newParams);
+              }}
               className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-3 sm:px-5 py-2.5 bg-black hover:bg-gray-800 text-white rounded-none text-xs sm:text-sm font-sans font-medium transition-all shadow-lg shadow-gray-500/20"
             >
               <Plus className="w-4 sm:w-5 h-4 sm:h-5 shrink-0" />
