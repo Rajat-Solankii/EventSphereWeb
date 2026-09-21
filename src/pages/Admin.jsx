@@ -847,10 +847,28 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
       setStreamingMessage('');
       setIsProcessing(false);
       
-      if (parsedJson && parsedJson.event_ready) {
+      let finalJson = parsedJson;
+      // Fallback parsing if backend didn't parse it but it looks like event data
+      if (!finalJson && fullReply && fullReply.includes('"event_ready"')) {
+        try {
+          const firstIdx = fullReply.indexOf('{');
+          const lastIdx = fullReply.lastIndexOf('}');
+          if (firstIdx !== -1 && lastIdx !== -1 && lastIdx > firstIdx) {
+            // Strip any literal newlines that might be breaking JSON parse inside strings
+            let jsonStr = fullReply.substring(firstIdx, lastIdx + 1);
+            // Replace literal unescaped newlines with spaces just in case
+            jsonStr = jsonStr.replace(/\n/g, ' '); 
+            finalJson = JSON.parse(jsonStr);
+          }
+        } catch(e) {
+          console.error("Frontend fallback parse failed:", e);
+        }
+      }
+
+      if (finalJson && finalJson.event_ready) {
         if (sessionId) setCurrentSessionId(sessionId);
         toast('AI has finished preparing your event details!', 'success');
-        onEventReady({ ...parsedJson.event_data, ai_session_id: sessionId });
+        onEventReady({ ...finalJson.event_data, ai_session_id: sessionId });
         onClose();
         setMessages([{ role: 'assistant', content: 'Hello! Need any help in creating an event? Just tell me what you have in mind!' }]);
       } else {
