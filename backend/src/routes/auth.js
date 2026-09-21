@@ -162,7 +162,7 @@ router.post('/register', authLimiter, async (req, res) => {
     if (!name || !email || !password) {
       return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
     }
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!passwordRegex.test(password)) {
       return res.status(400).json({ success: false, message: 'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' });
     }
@@ -540,7 +540,7 @@ router.put('/profile', verifyToken, authLimiter, async (req, res) => {
         return res.status(403).json({ success: false, message: 'Staff members cannot change their own password. Contact your organization admin.' });
       }
 
-      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$/;
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
       if (!newPassword || !passwordRegex.test(newPassword)) {
         return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character.' });
       }
