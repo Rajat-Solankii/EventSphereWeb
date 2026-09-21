@@ -787,7 +787,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/ai-chat/sessions', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/ai-chat/sessions`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       const data = await res.json();
@@ -1547,7 +1547,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       setSmtpTestState('loading');
       setSmtpTestMessage('');
       try {
-        const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/smtp/test', {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/smtp/test`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3078,7 +3078,7 @@ function AdminDashboardInner() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) setNotifications(await res.json());
@@ -3087,7 +3087,7 @@ function AdminDashboardInner() {
 
   const markAllRead = async () => {
     try {
-      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications/mark-all-read', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications/mark-all-read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
@@ -3107,7 +3107,7 @@ function AdminDashboardInner() {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) {
@@ -3128,7 +3128,7 @@ function AdminDashboardInner() {
 
   const fetchAttendees = async () => {
     try {
-      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) {
@@ -3238,7 +3238,7 @@ function AdminDashboardInner() {
         ai_session_id: newEvent.ai_session_id
       };
 
-      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

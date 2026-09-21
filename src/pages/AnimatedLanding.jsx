@@ -10,7 +10,7 @@ export default function AnimatedLanding() {
   const [eventsLoading, setEventsLoading] = useState(true);
 
   useEffect(() => {
-    fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/public/all')
+    fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/public/all`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setAllEvents(data))
       .catch(() => setAllEvents([]))
