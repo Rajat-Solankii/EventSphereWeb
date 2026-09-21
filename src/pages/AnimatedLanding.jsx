@@ -94,9 +94,9 @@ export default function AnimatedLanding() {
       </div>
 
       {/* Navigation Bar */}
-      <nav className="relative z-50 flex items-center justify-between px-8 py-6 max-w-7xl mx-auto">
-        <div className="font-serif text-3xl tracking-tight text-black flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" className="w-16 h-16 object-contain -ml-2" />
+      <nav className="relative z-50 flex items-center justify-between px-4 sm:px-8 py-4 sm:py-6 max-w-7xl mx-auto">
+        <div className="font-serif text-2xl sm:text-3xl tracking-tight text-black flex items-center gap-2 sm:gap-3 shrink-0">
+          <img src="/logo.png" alt="Logo" className="w-10 h-10 sm:w-16 sm:h-16 object-contain -ml-1 sm:-ml-2" />
           <span>EventSphere<sup>®</sup></span>
         </div>
         <div className="hidden md:flex space-x-8 text-sm font-sans">
@@ -107,7 +107,7 @@ export default function AnimatedLanding() {
         </div>
         <button 
           onClick={() => navigate('/admin')}
-          className="bg-black text-white font-sans rounded-full px-6 py-2.5 text-sm hover:scale-[1.03] transition-transform duration-300"
+          className="bg-black text-white font-sans rounded-full px-4 sm:px-6 py-2 sm:py-2.5 text-[11px] sm:text-sm whitespace-nowrap hover:scale-[1.03] transition-transform duration-300 ml-2"
         >
           Organizer Login
         </button>
@@ -125,7 +125,7 @@ export default function AnimatedLanding() {
 
         <button 
           onClick={() => navigate('/admin')}
-          className="bg-black text-white font-sans rounded-full px-14 py-5 text-base mt-12 hover:scale-[1.03] transition-transform duration-300 shadow-xl shadow-black/10"
+          className="bg-black text-white font-sans rounded-full px-10 py-4 sm:px-14 sm:py-5 text-sm sm:text-base mt-8 sm:mt-12 hover:scale-[1.03] transition-transform duration-300 shadow-xl shadow-black/10"
         >
           Create Event
         </button>
