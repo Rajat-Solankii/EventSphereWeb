@@ -22,6 +22,7 @@ const eventRoutes = require('./routes/events');
 const aiRoutes = require('./routes/ai');
 const adminRoutes = require('./routes/admin');
 const notificationsRoutes = require('./routes/notifications');
+const webadminRoutes = require('./routes/webadmin');
 
 // Socket setup
 const { initSocket } = require('./socket');
@@ -31,6 +32,7 @@ const { apiLimiter } = require('./middleware/rateLimit');
 const { verifyToken, requireEventAccess } = require('./middleware/auth');
 
 const app = express();
+app.set('trust proxy', 1);
 const httpServer = http.createServer(app);
 const io = initSocket(httpServer);
 const prisma = new PrismaClient();
@@ -54,6 +56,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/v1/events', eventRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/v1/notifications', notificationsRoutes);
+app.use('/api/v1/webadmin', webadminRoutes);
 app.use('/api/ai', aiRoutes);
 
 // ===== SMTP HELPER FUNCTIONS (shared) =====

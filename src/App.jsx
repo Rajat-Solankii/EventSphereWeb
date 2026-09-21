@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
@@ -8,6 +9,7 @@ import AnimatedLanding from './pages/AnimatedLanding';
 import LoginPage from './pages/LoginPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import WebAdmin from './pages/WebAdmin';
 import './App.css';
 import './index.css';
 
@@ -47,6 +49,7 @@ function AppRoutes() {
       <Route path="/event/:eventId" element={<Registration />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/webadmin" element={<WebAdmin />} />
 
       {/* Auth routes (redirect to admin if logged in) */}
       <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
@@ -65,6 +68,7 @@ function App() {
     <AuthProvider>
       <SocketProvider>
         <Router>
+          <Toaster position="top-right" />
           <AppRoutes />
         </Router>
       </SocketProvider>
