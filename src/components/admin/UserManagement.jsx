@@ -23,7 +23,7 @@ export default function UserManagement() {
     try {
       setError(null);
       setLoading(true);
-      const res = await fetch('http://localhost:3000/api/admin/users', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/users', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) {
@@ -39,7 +39,7 @@ export default function UserManagement() {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/v1/events', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) {
@@ -59,7 +59,7 @@ export default function UserManagement() {
     if (!newUser.email) { setModalError('Email is required'); return; }
     setOtpLoading(true); setModalError('');
     try {
-      const res = await fetch('http://localhost:3000/api/admin/users/send-otp', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/users/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,7 +85,7 @@ export default function UserManagement() {
     if (!otp) { setModalError('OTP is required'); return; }
     setOtpLoading(true); setModalError('');
     try {
-      const res = await fetch('http://localhost:3000/api/admin/users/verify-otp', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/users/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export default function UserManagement() {
     e.preventDefault();
     setModalError('');
     try {
-      const res = await fetch('http://localhost:3000/api/admin/users', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ export default function UserManagement() {
   const handleDeleteUser = async () => {
     if (!userToDelete) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/admin/users/${userToDelete.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/users/${userToDelete.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
@@ -157,7 +157,7 @@ export default function UserManagement() {
   const toggleEventAccess = async (userId, eventId, hasAccess) => {
     try {
       const method = hasAccess ? 'DELETE' : 'POST';
-      const res = await fetch(`http://localhost:3000/api/admin/users/${userId}/events/${eventId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/users/${userId}/events/${eventId}`, {
         method,
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });

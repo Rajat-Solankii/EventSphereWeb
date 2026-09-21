@@ -211,7 +211,7 @@ export default function Registration() {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/events/public/${eventId}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/public/${eventId}`);
         if (res.ok) {
           const e = await res.json();
           const mapped = {
@@ -287,7 +287,7 @@ export default function Registration() {
     };
     
     try {
-      const res = await fetch('http://localhost:3000/api/v1/tickets/book', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ attendee: { ...newAttendee, paymentScreenshot } })
@@ -323,7 +323,7 @@ export default function Registration() {
     setOtpError('');
     setRegistrationError('');
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/events/${eventId}/send-otp`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${eventId}/send-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: finalEmail })
@@ -350,7 +350,7 @@ export default function Registration() {
     
     setOtpError('');
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/events/${eventId}/verify-otp`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${eventId}/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: finalEmail, otp: enteredOtp })

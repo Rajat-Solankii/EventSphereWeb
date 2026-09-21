@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 
 const SocketContext = createContext(null);
 // Use the same URL as the API backend
-const SOCKET_URL = 'http://localhost:3000';
+const SOCKET_URL = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'));
 
 export const SocketProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);

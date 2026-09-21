@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
-const API = 'http://localhost:3000';
+const API = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'));
 
 export default function VerifyEmailPage() {
   const { verifyEmail } = useAuth();

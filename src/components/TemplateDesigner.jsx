@@ -104,7 +104,7 @@ export default function TemplateDesigner({ onSave, onCancel, defaultTitle, defau
     if (!aiPrompt.trim()) return;
     setIsGenerating(true);
     try {
-      const response = await fetch('http://localhost:3000/api/ai/generate-template', {
+      const response = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/ai/generate-template', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

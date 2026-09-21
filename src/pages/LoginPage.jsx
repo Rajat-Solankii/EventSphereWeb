@@ -3,7 +3,7 @@ import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-const API = 'http://localhost:3000';
+const API = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'));
 
 export default function LoginPage({ onNavigate }) {
   const { login, register, forgotPassword } = useAuth();

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 const AuthContext = createContext(null);
-const API = 'http://localhost:3000';
+const API = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'));
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

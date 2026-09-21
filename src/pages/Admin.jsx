@@ -321,7 +321,7 @@ function AttendeeRegisterView({ events, allAttendees }) {
     const yes = await confirm('Delete Registration', 'Are you sure you want to delete this registration? This action cannot be undone.');
     if (!yes) return;
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/tickets/${ticketId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${ticketId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
@@ -787,7 +787,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/v1/events/ai-chat/sessions', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/ai-chat/sessions', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       const data = await res.json();
@@ -816,7 +816,7 @@ function AIChatModal({ isOpen, onClose, onEventReady }) {
       }
 
       setIsLoadingHistory(true);
-      fetch(`http://localhost:3000/api/v1/events/ai-chat/history/${currentSessionId}`, {
+      fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/ai-chat/history/${currentSessionId}`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       })
       .then(res => res.json())
@@ -1450,7 +1450,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       if (!smtpForm.pass) return toast('Please enter SMTP Password / App Password.', 'error');
 
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/events/${event.id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${event.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1472,7 +1472,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     const handleUpiSave = async (e) => {
       e?.preventDefault?.();
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/events/${event.id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${event.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1494,7 +1494,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     const handleVerifyPayment = async (ticketId) => {
       setVerifyState(prev => ({ ...prev, [ticketId]: 'loading' }));
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/tickets/${ticketId}/verify-payment`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${ticketId}/verify-payment`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
         });
@@ -1517,7 +1517,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       if (!yes) return;
       setDeclineState(prev => ({ ...prev, [ticketId]: 'loading' }));
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/tickets/${ticketId}/decline-payment`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${ticketId}/decline-payment`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
         });
@@ -1547,7 +1547,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       setSmtpTestState('loading');
       setSmtpTestMessage('');
       try {
-        const res = await fetch('http://localhost:3000/api/v1/smtp/test', {
+        const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/smtp/test', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1596,7 +1596,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         formData.append('subject', broadcastSubject);
         formData.append('message', broadcastMessage);
         broadcastAttachments.forEach(file => formData.append('attachments', file));
-        const res = await fetch(`http://localhost:3000/api/v1/events/${event.id}/email-all`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${event.id}/email-all`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('es_token')}`
@@ -1629,7 +1629,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
         formData.append('subject', customMailModal.subject);
         formData.append('message', customMailModal.message);
         customMailModal.attachments.forEach(file => formData.append('attachments', file));
-        const res = await fetch(`http://localhost:3000/api/v1/tickets/${customMailModal.attendee.passId}/custom-email`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${customMailModal.attendee.passId}/custom-email`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` },
           body: formData
@@ -1651,7 +1651,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     const handleResendEmail = async (passId) => {
       setResendStates(prev => ({ ...prev, [passId]: 'loading' }));
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/tickets/${passId}/resend-email`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${passId}/resend-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -1677,7 +1677,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
     const handlePageConfigSave = async (e) => {
       e.preventDefault();
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/events/${event.id}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${event.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -1727,7 +1727,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
       const yes = await confirm('Delete Registration', 'Are you sure you want to delete this registration? This action cannot be undone.');
       if (!yes) return;
       try {
-        const res = await fetch(`http://localhost:3000/api/v1/tickets/${ticketId}`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets/${ticketId}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
         });
@@ -3078,7 +3078,7 @@ function AdminDashboardInner() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/v1/notifications', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) setNotifications(await res.json());
@@ -3087,7 +3087,7 @@ function AdminDashboardInner() {
 
   const markAllRead = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/v1/notifications/mark-all-read', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications/mark-all-read', {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
@@ -3097,7 +3097,7 @@ function AdminDashboardInner() {
   
   const markAsRead = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/notifications/${id}/read`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/notifications/${id}/read`, {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
@@ -3107,7 +3107,7 @@ function AdminDashboardInner() {
 
   const fetchEvents = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/v1/events', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) {
@@ -3128,7 +3128,7 @@ function AdminDashboardInner() {
 
   const fetchAttendees = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/v1/tickets', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/tickets', {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
       if (res.ok) {
@@ -3238,7 +3238,7 @@ function AdminDashboardInner() {
         ai_session_id: newEvent.ai_session_id
       };
 
-      const res = await fetch('http://localhost:3000/api/v1/events', {
+      const res = await fetch('${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3265,7 +3265,7 @@ function AdminDashboardInner() {
         customFormFields: updatedEvent.customFormFields
       };
 
-      const res = await fetch(`http://localhost:3000/api/v1/events/${updatedEvent.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${updatedEvent.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -3279,7 +3279,7 @@ function AdminDashboardInner() {
 
   const handleDeleteEvent = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/v1/events/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/v1/events/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('es_token')}` }
       });
