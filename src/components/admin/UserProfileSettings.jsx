@@ -327,8 +327,8 @@ export default function UserProfileSettings({ onClose }) {
           <div className="p-6 pt-2 max-h-[60vh] overflow-y-auto">
             <form onSubmit={handleSaveBasic}>
               {/* Profile Photo */}
-              <div className="flex items-center gap-6 mb-6">
-                <div className="relative group">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-6">
+                <div className="relative group shrink-0">
                   <div className="w-20 h-20 rounded-full bg-theme-primary/10 border border-theme-primary/30 flex items-center justify-center overflow-hidden">
                     {profileImage ? (
                       <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
@@ -376,12 +376,12 @@ export default function UserProfileSettings({ onClose }) {
 
             {/* Email Change Section */}
             <div className="mt-8 pt-6 border-t border-theme-primary/10">
-              <div className="flex items-center justify-between mb-3">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+                <div className="min-w-0 flex-1">
                   <label className="text-sm font-semibold text-theme-text/80 flex items-center gap-2">
                     <Mail className="w-4 h-4 opacity-50" /> Email Address
                   </label>
-                  <p className="text-sm text-theme-text/60 mt-1">{user?.email}</p>
+                  <p className="text-sm text-theme-text/60 mt-1 truncate">{user?.email}</p>
                 </div>
                 <button type="button" onClick={() => { 
                   if (emailFlowOpen) {
@@ -391,7 +391,7 @@ export default function UserProfileSettings({ onClose }) {
                   }
                   clearMessages(); 
                 }}
-                  className="px-4 py-1.5 text-xs font-bold bg-theme-primary/10 text-theme-primary rounded-lg hover:bg-theme-primary/20 transition-colors"
+                  className="shrink-0 px-4 py-1.5 text-xs font-bold bg-theme-primary/10 text-theme-primary rounded-lg hover:bg-theme-primary/20 transition-colors w-full sm:w-auto"
                 >
                   {emailFlowOpen ? 'Cancel' : 'Change Email'}
                 </button>
@@ -453,13 +453,13 @@ export default function UserProfileSettings({ onClose }) {
             </div>
             {/* Delete Account Section */}
             <div className="mt-8 pt-6 border-t border-theme-primary/10">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="min-w-0 flex-1">
                   <h4 className="text-sm font-semibold text-rose-500">Delete Account</h4>
                   <p className="text-xs text-theme-text/60 mt-1">Permanently delete your account and all data.</p>
                 </div>
                 <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={loading}
-                  className="px-4 py-1.5 text-xs font-bold text-rose-500 border border-rose-500 rounded-lg hover:bg-rose-500/10 transition-colors disabled:opacity-50"
+                  className="shrink-0 w-full sm:w-auto px-4 py-2 text-xs font-bold text-rose-500 border border-rose-500 rounded-lg hover:bg-rose-500/10 transition-colors disabled:opacity-50"
                 >
                   Delete Account
                 </button>
