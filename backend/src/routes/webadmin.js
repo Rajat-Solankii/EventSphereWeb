@@ -8,7 +8,7 @@ const bcrypt = require('bcryptjs');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 const DEFAULT_WEBADMIN_EMAIL = 'eventsphere565@gmail.com';
-const DEFAULT_WEBADMIN_PASSWORD = 'Admin@123'; // Temporary default password
+const DEFAULT_WEBADMIN_PASSWORD = 'Admin@123';
 
 // Middleware to verify Super Admin token
 const verifyWebAdmin = (req, res, next) => {
@@ -38,7 +38,7 @@ const ensureSuperAdminExists = async () => {
 
   if (!superAdmin) {
     console.log('No SUPER_ADMIN found. Auto-creating default WebAdmin profile...');
-    
+
     // Check if the email already exists to avoid P2002 Unique Constraint violation
     let existingUser = await prisma.user.findUnique({
       where: { email: DEFAULT_WEBADMIN_EMAIL }
@@ -118,7 +118,7 @@ router.post('/send-login-otp', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { password, otp } = req.body;
-    
+
     if (!password && !otp) {
       return res.status(400).json({ error: 'Password or OTP required' });
     }
@@ -206,13 +206,13 @@ router.post('/profile/send-otp', verifyWebAdmin, async (req, res) => {
 router.post('/profile/update', verifyWebAdmin, async (req, res) => {
   try {
     const { otp, newEmail, newPassword } = req.body;
-    
+
     const superAdmin = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!superAdmin) return res.status(404).json({ error: 'Super Admin not found.' });
 
     const email = superAdmin.email;
     const record = await prisma.otpVerification.findUnique({ where: { email } });
-    
+
     if (!record || record.otp !== otp || new Date() > record.expires_at) {
       return res.status(400).json({ error: 'Invalid or expired OTP.' });
     }
