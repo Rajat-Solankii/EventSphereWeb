@@ -478,7 +478,7 @@ export default function Registration() {
             <div className="max-w-3xl w-full mx-auto my-auto backdrop-blur-xl border border-gray-200/50 rounded-none overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.08)] flex flex-col theme-card-bg">
             {/* Event Info Top Banner */}
             <div className="w-full aspect-[16/9] sm:aspect-video relative overflow-hidden bg-gray-100 border-b border-gray-200/50">
-              <img src={targetEvent.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-cover" />
+              <img src={targetEvent.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-contain bg-gray-100" />
             </div>
 
             {/* Ticket Selection Content */}

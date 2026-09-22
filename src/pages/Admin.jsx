@@ -1818,41 +1818,43 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
 
         <div className="glass-panel border border-gray-200 rounded-none p-8 space-y-6 shadow-2xl">
           <div className="flex flex-col md:flex-row gap-8 items-start">
-            <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full md:w-1/3 h-48 object-cover rounded-none border border-gray-200" />
-            <div className="flex-1 space-y-4 relative">
-              <div className="absolute top-0 right-0 flex space-x-2">
-                <button onClick={() => handleEdit(event)} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Edit</button>
-                <button onClick={() => {
-                  if (!event.smtp_config) {
-                    toast('Please setup the email configuration first before sharing the event link.', 'warning');
-                    return;
-                  }
-                  if (!event.upi_config) {
-                    toast('Please setup the payment / UPI configuration first before hosting the event.', 'warning');
-                    return;
-                  }
-                  const link = `${window.location.origin}/event/${event.id}`;
-                  navigator.clipboard.writeText(link).then(() => toast('Registration link copied to clipboard!', 'success')).catch(() => {
-                    const textarea = document.createElement('textarea');
-                    textarea.value = link;
-                    document.body.appendChild(textarea);
-                    textarea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textarea);
-                    toast('Registration link copied to clipboard!', 'success');
-                  });
-                }} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Share Link</button>
-                <button onClick={() => {
-                  setDeleteConfirmText('');
-                  const newParams = new URLSearchParams(searchParams);
-                  newParams.set('view', 'delete');
-                  setSearchParams(newParams);
-                }} className="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 rounded border border-rose-400 text-xs font-serif font-normal text-theme-text shadow-lg transition-colors">Delete</button>
+            <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full md:w-1/3 h-48 object-contain bg-gray-100 rounded-none border border-gray-200" />
+            <div className="flex-1 min-w-0 w-full space-y-4">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <h2 className="text-3xl font-serif font-normal text-theme-text flex-1 break-words leading-tight">{event.title}</h2>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <button onClick={() => handleEdit(event)} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Edit</button>
+                  <button onClick={() => {
+                    if (!event.smtp_config) {
+                      toast('Please setup the email configuration first before sharing the event link.', 'warning');
+                      return;
+                    }
+                    if (!event.upi_config) {
+                      toast('Please setup the payment / UPI configuration first before hosting the event.', 'warning');
+                      return;
+                    }
+                    const link = `${window.location.origin}/event/${event.id}`;
+                    navigator.clipboard.writeText(link).then(() => toast('Registration link copied to clipboard!', 'success')).catch(() => {
+                      const textarea = document.createElement('textarea');
+                      textarea.value = link;
+                      document.body.appendChild(textarea);
+                      textarea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textarea);
+                      toast('Registration link copied to clipboard!', 'success');
+                    });
+                  }} className="px-3 py-1 bg-black hover:bg-gray-800 rounded border border-black text-xs font-serif font-normal text-white shadow-lg transition-colors">Share Link</button>
+                  <button onClick={() => {
+                    setDeleteConfirmText('');
+                    const newParams = new URLSearchParams(searchParams);
+                    newParams.set('view', 'delete');
+                    setSearchParams(newParams);
+                  }} className="px-3 py-1 bg-rose-600/80 hover:bg-rose-500 rounded border border-rose-400 text-xs font-serif font-normal text-theme-text shadow-lg transition-colors">Delete</button>
+                </div>
               </div>
-              <h2 className="text-3xl font-serif font-normal text-theme-text pr-48">{event.title}</h2>
-              <div className="flex items-center text-theme-text/80 space-x-6">
-                <div className="flex items-center space-x-2"><Calendar className="w-5 h-5 text-black" /> <span>{formatEventDate(event.date)}</span></div>
-                <div className="flex items-center space-x-2"><MapPin className="w-5 h-5 text-black" /> <span>{event.venue}</span></div>
+              <div className="flex flex-wrap items-center text-theme-text/80 gap-6">
+                <div className="flex items-center space-x-2"><Calendar className="w-5 h-5 text-black shrink-0" /> <span>{formatEventDate(event.date)}</span></div>
+                <div className="flex items-center space-x-2"><MapPin className="w-5 h-5 text-black shrink-0" /> <span>{event.venue}</span></div>
               </div>
               <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                 <div><div className="text-sm text-theme-text/60">Total Capacity</div><div className="text-xl font-serif font-normal text-theme-text">{stats.totalCap}</div></div>
@@ -2021,19 +2023,19 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                 <h4 className="text-sm font-serif font-normal text-theme-text/80 uppercase tracking-wider">Test SMTP Connection</h4>
               </div>
               <p className="text-xs text-theme-text/50">Verify your credentials by sending a real test email before saving. This will use the credentials entered above.</p>
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="email"
                   placeholder="Send test email to..."
                   value={smtpTestEmail}
                   onChange={e => setSmtpTestEmail(e.target.value)}
-                  className="flex-1 bg-theme-bg border border-gray-200 rounded-sm px-4 py-2 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-black"
+                  className="flex-1 min-w-0 w-full bg-theme-bg border border-gray-200 rounded-sm px-4 py-2 text-theme-text text-sm placeholder:text-slate-600 focus:outline-none focus:border-black"
                 />
                 <button
                   type="button"
                   onClick={handleSmtpTest}
                   disabled={smtpTestState === 'loading'}
-                  className="px-5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-5 py-2 w-full sm:w-auto shrink-0 whitespace-nowrap bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 rounded-sm text-sm font-serif font-normal transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {smtpTestState === 'loading' ? (
                     <><span className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-none animate-spin inline-block" /> Sending...</>
@@ -2142,11 +2144,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                   />
                 </div>
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <label className="text-sm font-sans font-medium text-theme-text/80">Message (HTML or Text)</label>
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex items-center gap-2">
-                        <label className="text-xs text-theme-text/50">Attachments:</label>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-2">
+                    <label className="text-sm font-sans font-medium text-theme-text/80 mb-1 sm:mb-0">Message (HTML or Text)</label>
+                    <div className="flex flex-col items-start sm:items-end gap-2 w-full sm:w-auto">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
+                        <label className="text-xs text-theme-text/50 shrink-0">Attachments:</label>
                         <input 
                           type="file" 
                           multiple 
@@ -2154,11 +2156,11 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                             setBroadcastAttachments(prev => [...prev, ...Array.from(e.target.files)]);
                             e.target.value = '';
                           }} 
-                          className="text-xs w-48 text-theme-text/80 file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-xs file:font-sans font-medium file:bg-gray-100 file:text-black hover:file:bg-black/20 transition-all cursor-pointer"
+                          className="text-xs w-full sm:w-48 text-theme-text/80 file:mr-2 file:py-1 file:px-2 file:rounded-sm file:border-0 file:text-xs file:font-sans font-medium file:bg-gray-100 file:text-black hover:file:bg-black/20 transition-all cursor-pointer"
                         />
                       </div>
                       {broadcastAttachments.length > 0 && (
-                        <div className="flex flex-wrap justify-end gap-2 max-w-[300px]">
+                        <div className="flex flex-wrap justify-start sm:justify-end gap-2 w-full sm:max-w-[300px]">
                           {broadcastAttachments.map((f, i) => (
                             <span key={i} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-black text-xs rounded-sm font-mono truncate max-w-[150px]">
                               <span className="truncate">{f.name}</span>
@@ -2178,25 +2180,25 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
                     className="w-full bg-white/60 font-mono text-sm border border-gray-200 rounded-sm p-4 text-theme-text placeholder:text-slate-500 focus:outline-none focus:border-theme-secondary transition-colors resize-y"
                   />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <p className="text-xs text-theme-text/50">
                     {!event.smtp_config
                       ? '⚠️ No SMTP configured for this event — will use global fallback'
                       : `✉ Will send from: ${event.smtp_config?.fromEmail || event.smtp_config?.user || 'configured sender'}`
                     }
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                     <button
                       type="button"
                       onClick={() => setShowBroadcastPreview(!showBroadcastPreview)}
-                      className="px-5 py-2 bg-gray-100 hover:bg-black/20 text-black rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2"
+                      className="px-5 py-2 w-full sm:w-auto bg-gray-100 hover:bg-black/20 text-black rounded-sm text-sm font-serif font-normal transition-all flex items-center justify-center gap-2"
                     >
                       <Eye size={16} /> Preview
                     </button>
                     <button
                       type="submit"
                       disabled={broadcastState === 'loading' || eventAttendees.length === 0}
-                      className="px-5 py-2 bg-black hover:bg-gray-800 text-white rounded-sm text-sm font-serif font-normal transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
+                      className="px-5 py-2 w-full sm:w-auto bg-black hover:bg-gray-800 text-white rounded-sm text-sm font-serif font-normal transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
                     >
                       {broadcastState === 'loading' ? (
                         <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" /> Sending...</>
@@ -2693,7 +2695,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
               <label className="text-sm font-sans font-medium text-theme-text/80">Event Cover</label>
               <div className="flex items-center space-x-4">
                 {formData.image && (
-                  <img src={formData.image} alt="Event Cover Preview" className="w-32 h-20 object-cover rounded-none border border-gray-200 shadow-md" />
+                  <img src={formData.image} alt="Event Cover Preview" className="w-32 h-20 object-contain bg-gray-100 rounded-none border border-gray-200 shadow-md" />
                 )}
                 <button
                   type="button"
@@ -2914,7 +2916,7 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           return (
             <div key={event.id} onClick={(e) => { if (e.target.tagName !== 'BUTTON') setViewingEventId(event.id); }} className="glass-panel rounded-none border border-gray-200 overflow-hidden flex flex-col relative group cursor-pointer hover:border-black/50 transition-colors">
               <div className="h-32 bg-white relative">
-                <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity" />
+                <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-contain bg-gray-100 opacity-50 group-hover:opacity-80 transition-opacity" />
                 <div className="absolute top-3 right-3 px-2 py-1 bg-white/80 backdrop-blur rounded border border-gray-200 text-xs font-sans font-medium text-theme-text/80">
                   ID: {event.id.toString().padStart(4, '0')}
                 </div>
@@ -3378,36 +3380,36 @@ function AdminDashboardInner() {
             {viewingEventId ? (
               <>
                 <div className="pt-2 pb-4">
-                  <button onClick={() => setViewingEventId(null)} className="flex items-center space-x-2 text-theme-text/60 hover:text-theme-text transition-colors text-sm font-sans font-medium">
+                  <button onClick={() => { setViewingEventId(null); setIsMobileMenuOpen(false); }} className="flex items-center space-x-2 text-theme-text/60 hover:text-theme-text transition-colors text-sm font-sans font-medium">
                     <span>← Back to Global Admin</span>
                   </button>
                 </div>
                 <div className="pt-2 pb-2">
                   <div className="px-3 text-xs font-serif font-normal text-black uppercase tracking-widest font-mono">Event Controls</div>
                 </div>
-                <NavItem icon={<LayoutDashboard size={18} />} label="Overview" active={eventActiveTab === 'overview'} onClick={() => setEventActiveTab('overview')} />
-                <NavItem icon={<LayoutDashboard size={18} />} label="Page Design" active={eventActiveTab === 'design'} onClick={() => setEventActiveTab('design')} />
-                <NavItem icon={<Settings size={18} />} label="Email / SMTP Config" active={eventActiveTab === 'smtp'} onClick={() => setEventActiveTab('smtp')} />
-                <NavItem icon={<CreditCard size={18} />} label="Payment / UPI Config" active={eventActiveTab === 'payment'} onClick={() => setEventActiveTab('payment')} />
-                <NavItem icon={<MessageSquare size={18} />} label="Broadcast Message" active={eventActiveTab === 'broadcast'} onClick={() => setEventActiveTab('broadcast')} />
-                <NavItem icon={<Users size={18} />} label="Participant List" active={eventActiveTab === 'participants'} onClick={() => setEventActiveTab('participants')} />
-                <NavItem icon={<Clock size={18} />} label="Access Logs" active={eventActiveTab === 'access_logs'} onClick={() => setEventActiveTab('access_logs')} />
+                <NavItem icon={<LayoutDashboard size={18} />} label="Overview" active={eventActiveTab === 'overview'} onClick={() => { setEventActiveTab('overview'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<LayoutDashboard size={18} />} label="Page Design" active={eventActiveTab === 'design'} onClick={() => { setEventActiveTab('design'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<Settings size={18} />} label="Email / SMTP Config" active={eventActiveTab === 'smtp'} onClick={() => { setEventActiveTab('smtp'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<CreditCard size={18} />} label="Payment / UPI Config" active={eventActiveTab === 'payment'} onClick={() => { setEventActiveTab('payment'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<MessageSquare size={18} />} label="Broadcast Message" active={eventActiveTab === 'broadcast'} onClick={() => { setEventActiveTab('broadcast'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<Users size={18} />} label="Participant List" active={eventActiveTab === 'participants'} onClick={() => { setEventActiveTab('participants'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<Clock size={18} />} label="Access Logs" active={eventActiveTab === 'access_logs'} onClick={() => { setEventActiveTab('access_logs'); setIsMobileMenuOpen(false); }} />
               </>
             ) : (
               <>
-                <NavItem icon={<LayoutDashboard size={18} />} label="Live Dashboard" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
-                <NavItem icon={<Calendar size={18} />} label="Events Management" active={activeTab === 'events_management'} onClick={() => setActiveTab('events_management')} />
+                <NavItem icon={<LayoutDashboard size={18} />} label="Live Dashboard" active={activeTab === 'dashboard'} onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<Calendar size={18} />} label="Events Management" active={activeTab === 'events_management'} onClick={() => { setActiveTab('events_management'); setIsMobileMenuOpen(false); }} />
 
                 {user?.role === 'ORG_ADMIN' && (
-                  <NavItem icon={<Shield size={18} />} label="Staff Management" active={activeTab === 'user_management'} onClick={() => setActiveTab('user_management')} />
+                  <NavItem icon={<Shield size={18} />} label="Staff Management" active={activeTab === 'user_management'} onClick={() => { setActiveTab('user_management'); setIsMobileMenuOpen(false); }} />
                 )}
 
                 <div className="pt-4 pb-2">
                   <div className="px-3 text-xs font-serif font-normal text-slate-600 uppercase tracking-widest font-mono">Operations</div>
                 </div>
 
-                <NavItem icon={<Users size={18} />} label="Attendee Register" active={activeTab === 'attendees'} onClick={() => setActiveTab('attendees')} />
-                <NavItem icon={<CreditCard size={18} />} label="Transactions" active={activeTab === 'transactions'} onClick={() => setActiveTab('transactions')} />
+                <NavItem icon={<Users size={18} />} label="Attendee Register" active={activeTab === 'attendees'} onClick={() => { setActiveTab('attendees'); setIsMobileMenuOpen(false); }} />
+                <NavItem icon={<CreditCard size={18} />} label="Transactions" active={activeTab === 'transactions'} onClick={() => { setActiveTab('transactions'); setIsMobileMenuOpen(false); }} />
               </>
             )}
           </nav>
