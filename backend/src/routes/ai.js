@@ -3,7 +3,7 @@ const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSy_dummy_key");
-const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
+const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
 
 router.post('/generate-template', async (req, res) => {
   try {

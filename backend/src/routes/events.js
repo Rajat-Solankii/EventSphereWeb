@@ -412,7 +412,7 @@ The JSON MUST match this structure exactly:
 }`;
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-3.6-flash",
       systemInstruction: systemInstruction 
     });
 
