@@ -108,7 +108,7 @@ The JSON MUST match this structure exactly:
 }`;
         
         const model = genAI.getGenerativeModel({ 
-          model: "gemini-3.6-flash",
+          model: "gemini-3.1-flash-lite",
           systemInstruction: systemInstruction 
         });
 
@@ -130,15 +130,39 @@ The JSON MUST match this structure exactly:
           return { role, parts };
         });
 
-        const resultStream = await model.generateContentStream({
-          contents: geminiMessages
-        });
-
         let fullReply = '';
-        for await (const chunk of resultStream.stream) {
-          const chunkText = chunk.text();
-          fullReply += chunkText;
-          socket.emit('ai_chat_chunk', { chunk: chunkText });
+        try {
+          const resultStream = await model.generateContentStream({
+            contents: geminiMessages
+          });
+          for await (const chunk of resultStream.stream) {
+            const chunkText = chunk.text();
+            fullReply += chunkText;
+            socket.emit('ai_chat_chunk', { chunk: chunkText });
+          }
+        } catch (err) {
+          console.warn("Primary model failed, falling back to Groq");
+          const Groq = require('groq-sdk');
+          const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+          const groqMessages = [
+            { role: 'system', content: systemInstruction },
+            ...messages.map(m => ({
+              role: m.role === 'assistant' ? 'assistant' : 'user',
+              content: m.content || ''
+            }))
+          ];
+          const chatCompletion = await groq.chat.completions.create({
+            messages: groqMessages,
+            model: 'openai/gpt-oss-120b',
+            stream: true
+          });
+          for await (const chunk of chatCompletion) {
+            const chunkText = chunk.choices[0]?.delta?.content || '';
+            if (chunkText) {
+              fullReply += chunkText;
+              socket.emit('ai_chat_chunk', { chunk: chunkText });
+            }
+          }
         }
 
         let parsedJson = null;

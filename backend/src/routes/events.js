@@ -412,7 +412,7 @@ The JSON MUST match this structure exactly:
 }`;
 
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.6-flash",
+      model: "gemini-3.1-flash-lite",
       systemInstruction: systemInstruction 
     });
 
@@ -435,11 +435,29 @@ The JSON MUST match this structure exactly:
       return { role, parts };
     });
 
-    const result = await model.generateContent({
-      contents: geminiMessages
-    });
-    
-    let reply = result.response.text().trim();
+    let reply = '';
+    try {
+      const result = await model.generateContent({
+        contents: geminiMessages
+      });
+      reply = result.response.text().trim();
+    } catch (err) {
+      console.warn("Primary model failed, falling back to Groq");
+      const Groq = require('groq-sdk');
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const groqMessages = [
+        { role: 'system', content: systemInstruction },
+        ...messages.map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content || ''
+        }))
+      ];
+      const chatCompletion = await groq.chat.completions.create({
+        messages: groqMessages,
+        model: 'openai/gpt-oss-120b'
+      });
+      reply = (chatCompletion.choices[0]?.message?.content || '').trim();
+    }
     
     // Check if reply is the final JSON
     let parsedJson = null;

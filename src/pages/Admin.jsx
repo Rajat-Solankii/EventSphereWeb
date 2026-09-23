@@ -740,7 +740,19 @@ const formatEventDate = (dateString) => {
 
 const formatMessage = (text) => {
   if (!text) return null;
-  const parts = text.split(/(\*\*.*?\*\*)/g);
+  
+  let cleanText = text;
+  if (cleanText.includes('"event_ready"')) {
+    const startIdx = cleanText.indexOf('{');
+    if (startIdx !== -1) {
+      cleanText = cleanText.substring(0, startIdx).trim();
+    }
+    if (!cleanText) cleanText = "Event created! 🎉";
+  } else if (cleanText.trim().startsWith('{') && cleanText.length > 2 && !cleanText.includes('}')) {
+    cleanText = "Creating your event...";
+  }
+
+  const parts = cleanText.split(/(\*\*.*?\*\*)/g);
   return (
     <>
       {parts.map((part, i) => {

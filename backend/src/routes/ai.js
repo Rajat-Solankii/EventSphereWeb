@@ -3,7 +3,7 @@ const router = express.Router();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "AIzaSy_dummy_key");
-const model = genAI.getGenerativeModel({ model: "gemini-3.6-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite" });
 
 router.post('/generate-template', async (req, res) => {
   try {
@@ -63,8 +63,20 @@ Important Rules:
 4. Do NOT include a "qrcode" element. That will be added automatically later if it's a ticket.
 5. Provide ONLY the raw JSON string in your response. No explanation.`;
 
-    const result = await model.generateContent(systemPrompt);
-    let responseText = result.response.text();
+    let responseText = '';
+    try {
+      const result = await model.generateContent(systemPrompt);
+      responseText = result.response.text();
+    } catch (err) {
+      console.warn("Primary model failed, falling back to Groq");
+      const Groq = require('groq-sdk');
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const chatCompletion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: systemPrompt }],
+        model: 'openai/gpt-oss-120b'
+      });
+      responseText = chatCompletion.choices[0]?.message?.content || '';
+    }
     
     // Clean up if it returned markdown json blocks
     if (responseText.includes('\`\`\`json')) {
