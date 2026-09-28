@@ -279,4 +279,41 @@ router.delete('/users/:id', verifyWebAdmin, async (req, res) => {
   }
 });
 
+// GET /api/v1/webadmin/database/tables
+router.get('/database/tables', verifyWebAdmin, async (req, res) => {
+  try {
+    const tables = await prisma.$queryRaw`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_prisma_migrations'`;
+    res.json(tables.map(t => t.name));
+  } catch (error) {
+    console.error('Failed to fetch tables:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// GET /api/v1/webadmin/database/table/:tableName
+router.get('/database/table/:tableName', verifyWebAdmin, async (req, res) => {
+  try {
+    const { tableName } = req.params;
+    
+    // Prevent SQL injection by validating table name
+    const allowedTables = await prisma.$queryRaw`SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'`;
+    const isValid = allowedTables.some(t => t.name === tableName);
+    
+    if (!isValid) return res.status(400).json({ error: 'Invalid table name' });
+
+    // Fetch all rows
+    const rows = await prisma.$queryRawUnsafe(`SELECT * FROM "${tableName}"`);
+    
+    // Convert BigInts if any exist (Prisma raw queries sometimes return BigInts)
+    const sanitizedRows = JSON.parse(JSON.stringify(rows, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    ));
+
+    res.json(sanitizedRows);
+  } catch (error) {
+    console.error('Failed to fetch table data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;

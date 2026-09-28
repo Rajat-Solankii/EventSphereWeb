@@ -27,6 +27,13 @@ export default function WebAdmin() {
   const [deleteState, setDeleteState] = useState({});
   const [userToDelete, setUserToDelete] = useState(null);
 
+  // Database Viewer State
+  const [activeTab, setActiveTab] = useState('organizers'); // 'organizers' or 'database'
+  const [dbTables, setDbTables] = useState([]);
+  const [selectedTable, setSelectedTable] = useState('');
+  const [tableData, setTableData] = useState([]);
+  const [fetchingDb, setFetchingDb] = useState(false);
+
   useEffect(() => {
     if (token) {
       fetchUsers();
@@ -157,6 +164,44 @@ export default function WebAdmin() {
     }
   };
 
+  const fetchDbTables = async () => {
+    try {
+      const res = await fetch(`${API}/api/v1/webadmin/database/tables`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDbTables(data);
+      }
+    } catch (err) {
+      toast.error('Failed to fetch tables');
+    }
+  };
+
+  const fetchTableData = async (tableName) => {
+    setSelectedTable(tableName);
+    if (!tableName) {
+      setTableData([]);
+      return;
+    }
+    setFetchingDb(true);
+    try {
+      const res = await fetch(`${API}/api/v1/webadmin/database/table/${tableName}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTableData(data);
+      } else {
+        toast.error('Failed to fetch table data');
+      }
+    } catch (err) {
+      toast.error('Network error');
+    } finally {
+      setFetchingDb(false);
+    }
+  };
+
   const executeDeleteUser = async () => {
     if (!userToDelete) return;
     const userId = userToDelete;
@@ -272,9 +317,25 @@ export default function WebAdmin() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <nav className="bg-white border-b px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" className="w-8 h-8" />
-          <span className="font-serif text-xl tracking-tight">EventSphere WebAdmin</span>
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Logo" className="w-8 h-8" />
+            <span className="font-serif text-xl tracking-tight">EventSphere WebAdmin</span>
+          </div>
+          <div className="hidden md:flex gap-4 border-l pl-6">
+            <button 
+              onClick={() => setActiveTab('organizers')} 
+              className={`text-sm transition-colors ${activeTab === 'organizers' ? 'font-bold text-black' : 'text-gray-500 hover:text-black'}`}
+            >
+              Organizers
+            </button>
+            <button 
+              onClick={() => { setActiveTab('database'); fetchDbTables(); }} 
+              className={`text-sm transition-colors ${activeTab === 'database' ? 'font-bold text-black' : 'text-gray-500 hover:text-black'}`}
+            >
+              Database Viewer
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-4">
           <button
@@ -298,7 +359,8 @@ export default function WebAdmin() {
         </div>
       </nav>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto p-6 mt-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-6 mt-6 overflow-hidden flex flex-col">
+        {activeTab === 'organizers' ? (
         <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
           <div className="px-6 py-5 border-b flex justify-between items-center bg-gray-50/50">
             <h2 className="font-serif text-lg text-gray-800">Registered Organizers</h2>
@@ -369,6 +431,67 @@ export default function WebAdmin() {
             </table>
           </div>
         </div>
+        ) : (
+        <div className="bg-white rounded-lg shadow-sm border flex flex-col h-[75vh]">
+          <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50/50">
+            <div className="flex items-center gap-4">
+              <h2 className="font-serif text-lg text-gray-800">Database Viewer</h2>
+              <select 
+                value={selectedTable}
+                onChange={(e) => fetchTableData(e.target.value)}
+                className="border rounded px-3 py-1.5 text-sm outline-none focus:ring-1 focus:ring-black bg-white"
+              >
+                <option value="">-- Select a Table --</option>
+                {dbTables.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <button 
+              onClick={() => fetchTableData(selectedTable)} 
+              disabled={fetchingDb || !selectedTable}
+              className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-1.5 rounded transition-colors disabled:opacity-50"
+            >
+              {fetchingDb ? 'Refreshing...' : 'Refresh Table'}
+            </button>
+          </div>
+          
+          <div className="overflow-auto flex-1 p-0">
+            {!selectedTable ? (
+              <div className="flex items-center justify-center h-full text-gray-400 font-serif">
+                Select a table from the dropdown above to view its data.
+              </div>
+            ) : fetchingDb ? (
+              <div className="flex items-center justify-center h-full text-gray-400 font-serif animate-pulse">
+                Loading table data...
+              </div>
+            ) : tableData.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-400 font-serif">
+                Table is empty.
+              </div>
+            ) : (
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-gray-50 text-gray-500 text-xs uppercase font-serif tracking-wider sticky top-0 z-10 shadow-sm">
+                  <tr>
+                    {Object.keys(tableData[0]).map(key => (
+                      <th key={key} className="px-6 py-4 font-medium border-b bg-gray-50">{key}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {tableData.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                      {Object.values(row).map((val, vIdx) => (
+                        <td key={vIdx} className="px-6 py-3 max-w-[200px] truncate text-gray-600" title={String(val)}>
+                          {val === null ? <span className="text-gray-300 italic">null</span> : String(val)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+        )}
       </main>
 
       {/* Custom Delete Confirmation Modal */}
