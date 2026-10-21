@@ -2921,27 +2921,89 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
           return now > end;
         });
 
-        const renderEventCard = (event) => {
+        const renderEventCard = (event, status = 'upcoming') => {
           const stats = getEventStats(event);
           const pageConfig = event.page_config ? (typeof event.page_config === 'string' ? JSON.parse(event.page_config) : event.page_config) : {};
           const currencySymbol = pageConfig.currency === 'USD' ? '$' : pageConfig.currency === 'EUR' ? '€' : pageConfig.currency === 'GBP' ? '£' : '₹';
+          const isEnded = status === 'ended';
+          const isOngoing = status === 'ongoing';
+
           return (
-            <div key={event.id} onClick={(e) => { if (e.target.tagName !== 'BUTTON') setViewingEventId(event.id); }} className="glass-panel rounded-none border border-gray-200 overflow-hidden flex flex-col relative group cursor-pointer hover:border-black/50 transition-colors">
-              <div className="h-32 bg-white relative">
-                <img src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} alt="" className="w-full h-full object-contain bg-gray-100 opacity-50 group-hover:opacity-80 transition-opacity" />
-                <div className="absolute top-3 right-3 px-2 py-1 bg-white/80 backdrop-blur rounded border border-gray-200 text-xs font-sans font-medium text-theme-text/80">
-                  ID: {event.id.toString().padStart(4, '0')}
+            <div 
+              key={event.id} 
+              onClick={(e) => { if (e.target.tagName !== 'BUTTON') setViewingEventId(event.id); }} 
+              className={`rounded-xl border overflow-hidden flex flex-col relative group cursor-pointer transition-all duration-300 ${
+                isOngoing
+                  ? "bg-white border-emerald-400 shadow-md hover:shadow-xl hover:-translate-y-1 ring-1 ring-emerald-400/30"
+                  : isEnded
+                  ? "bg-gray-50/70 border-gray-200 opacity-60 hover:opacity-90 hover:border-gray-300"
+                  : "bg-white border-gray-200/90 shadow-sm hover:shadow-xl hover:border-black/40 hover:-translate-y-1"
+              }`}
+            >
+              <div className="h-44 bg-stone-900 relative overflow-hidden">
+                <img 
+                  src={event.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&q=80&w=800'} 
+                  alt={event.title} 
+                  className={`w-full h-full object-cover transition-all duration-500 ${
+                    isEnded 
+                      ? "grayscale opacity-50 group-hover:grayscale-0 group-hover:opacity-80" 
+                      : "opacity-100 group-hover:scale-105"
+                  }`} 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                
+                {/* Status Badge */}
+                <div className="absolute top-3 left-3">
+                  {isOngoing && (
+                    <span className="px-2.5 py-1 bg-emerald-600 text-white text-[11px] font-mono font-semibold rounded-full flex items-center gap-1.5 shadow-md">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
+                      LIVE NOW
+                    </span>
+                  )}
+                  {status === 'upcoming' && (
+                    <span className="px-2.5 py-1 bg-blue-600 text-white text-[10px] font-mono font-semibold tracking-wider rounded-full shadow-md flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                      SCHEDULED
+                    </span>
+                  )}
+                  {isEnded && (
+                    <span className="px-2.5 py-1 bg-black/60 text-gray-300 backdrop-blur text-[10px] font-mono font-medium rounded-full">
+                      ENDED
+                    </span>
+                  )}
+                </div>
+
+                {/* ID badge */}
+                <div className="absolute top-3 right-3 px-2 py-0.5 bg-black/60 text-white/90 backdrop-blur rounded text-[11px] font-mono border border-white/10 shadow-sm">
+                  #{event.id.toString().slice(0, 8)}
                 </div>
               </div>
-              <div className="p-5 flex-1 flex flex-col">
-                <h3 className="text-lg font-serif font-normal text-theme-text mb-2 line-clamp-1">{event.title}</h3>
-                <div className="space-y-1 mb-4 text-sm text-theme-text/60">
-                  <div className="flex items-center space-x-2"><Calendar className="w-3.5 h-3.5" /> <span>{formatEventDate(event.date)}</span></div>
-                  <div className="flex items-center space-x-2"><MapPin className="w-3.5 h-3.5" /> <span className="line-clamp-1">{event.venue}</span></div>
+
+              <div className="p-5 flex-1 flex flex-col bg-white">
+                <h3 className={`text-lg font-serif font-semibold mb-2.5 line-clamp-1 transition-colors ${
+                  isEnded ? "text-gray-500" : "text-gray-900 group-hover:text-black"
+                }`}>
+                  {event.title}
+                </h3>
+                
+                <div className="space-y-1.5 mb-5 text-xs sm:text-sm text-gray-600">
+                  <div className="flex items-center space-x-2">
+                    <Calendar className={`w-3.5 h-3.5 shrink-0 ${isEnded ? "text-gray-400" : "text-gray-700"}`} />
+                    <span className="font-medium">{formatEventDate(event.date)}</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <MapPin className={`w-3.5 h-3.5 shrink-0 ${isEnded ? "text-gray-400" : "text-gray-700"}`} />
+                    <span className="line-clamp-1">{event.venue}</span>
+                  </div>
                 </div>
-                <div className="mt-auto pt-4 border-t border-stone-800 flex justify-between items-center text-sm">
-                  <div className="text-theme-text/80"><span className="font-serif font-normal text-theme-text">{stats.totalAvail}</span> / {stats.totalCap} left</div>
-                  <div className="font-serif font-normal text-black">{stats.minPrice === 0 ? "Free" : `From ${currencySymbol}${stats.minPrice.toFixed(2)}`}</div>
+
+                <div className="mt-auto pt-3.5 border-t border-gray-100 flex justify-between items-center text-xs sm:text-sm">
+                  <div className="text-gray-600">
+                    <span className={`font-semibold ${isEnded ? "text-gray-500" : "text-gray-900"}`}>{stats.totalAvail}</span> / {stats.totalCap} left
+                  </div>
+                  <div className={`font-serif font-semibold ${isEnded ? "text-gray-400" : "text-gray-900"}`}>
+                    {stats.minPrice === 0 ? "Free" : `From ${currencySymbol}${stats.minPrice.toFixed(2)}`}
+                  </div>
                 </div>
               </div>
             </div>
@@ -2954,12 +3016,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             {ongoing.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-2.5 h-2.5 bg-black rounded-full animate-pulse" />
-                  <h3 className="text-lg font-serif font-normal text-theme-text">Ongoing Events</h3>
-                  <span className="text-[10px] font-mono bg-black text-white px-2.5 py-0.5 rounded-full tracking-wider">{ongoing.length} LIVE</span>
+                  <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
+                  <h3 className="text-xl font-serif font-medium text-gray-900">Ongoing Events</h3>
+                  <span className="text-[11px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full tracking-wider">{ongoing.length} LIVE</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {ongoing.map(renderEventCard)}
+                  {ongoing.map(e => renderEventCard(e, 'ongoing'))}
                 </div>
               </div>
             )}
@@ -2973,12 +3035,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             {upcoming.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
-                  <h3 className="text-lg font-serif font-normal text-theme-text">Upcoming Events</h3>
-                  <span className="text-[10px] font-mono bg-gray-100 text-black px-2.5 py-0.5 rounded-full border border-gray-200 tracking-wider">{upcoming.length} SCHEDULED</span>
+                  <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
+                  <h3 className="text-xl font-serif font-medium text-gray-900">Upcoming Events</h3>
+                  <span className="text-[11px] font-mono font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full tracking-wider">{upcoming.length} SCHEDULED</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {upcoming.map(renderEventCard)}
+                  {upcoming.map(e => renderEventCard(e, 'upcoming'))}
                 </div>
               </div>
             )}
@@ -2992,12 +3054,12 @@ function EventManager({ events, allAttendees = [], setAllAttendees, onAddEvent, 
             {ended.length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-2.5 h-2.5 bg-gray-300 rounded-full" />
+                  <div className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
                   <h3 className="text-lg font-serif font-normal text-gray-400">Ended Events</h3>
                   <span className="text-[10px] font-mono bg-gray-100 text-gray-400 px-2.5 py-0.5 rounded-full border border-gray-200 tracking-wider">{ended.length} PAST</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-50">
-                  {ended.map(renderEventCard)}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {ended.map(e => renderEventCard(e, 'ended'))}
                 </div>
               </div>
             )}
